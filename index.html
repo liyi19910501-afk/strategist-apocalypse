@@ -340,7 +340,7 @@
     <canvas id="game" width="480" height="270"></canvas>
     <div class="scanlines"></div>
     <div class="vignette"></div>
-    <button id="muteBtn">♪ AUDIO ON</button>
+    <button id="muteBtn">♪ 音乐 开</button>
     <button id="backBtn">← 返回标题</button>
     <button id="pauseBtn">⏸ 暂停</button>
 
@@ -392,7 +392,6 @@
       <span class="key">1</span><span class="key">2</span><span class="key">3</span> 行动 / 选择答案
     </div>
     <div class="meta-row">
-      <span>BUILD: V1.1 · 策略人启示录</span>
       <span class="accent">MADE BY SYSTEM2</span>
     </div>
   </div>
@@ -630,7 +629,34 @@
 
     // === CH2 数据（巷战·市场调研） ===
     const CH2_TRAPS = ['全链路心智占领', '高频触达长效留存', '去中心化内容矩阵', '全场景数字化闭环', '品牌心智溢价权重', '存量博弈下的生态位', '全域兴趣电商协同'];
-    const CH2_TRUTHS = ['她买这个只因为离家近', '包装上的小字没人看', '送个洗洁精比广告有效', '他其实在担心下个月房租', '下班路上顺手买的', '这颜色在货架上看不清', '直播间下单只是图热闹', '他买名牌是为了不掉队', '给孩子买最好的，自己凑合', '消费者对品牌没有忠诚度'];
+    const CH2_TRUTHS = [
+      '消费者往往不知道自己要什么',
+      '别给太多选项！',
+      '消费者对品牌没有忠诚度',
+      '她买这个只因为离家近',
+      '他其实在担心下个月房租',
+      '下班路上顺手买的',
+      '送个洗洁精比广告有效',
+      '广告记不住，但货架上认得出',
+      '问"好不好用"，答案永远是"挺好"',
+      '差评比好评更影响下单',
+      '理性比较 5 分钟，最后还是凭感觉',
+      '排队的店一定好吃',
+      '免费送，比打折更有吸引力',
+      '"她说价格无所谓"，结账时还是看了',
+      '消费者会说一套，做一套',
+      '他买名牌是为了不掉队',
+    ];
+    let ch2RecentTruthIdx = [];
+    function pickCh2Truth() {
+      const recentMax = Math.min(4, CH2_TRUTHS.length - 1);
+      let pool = CH2_TRUTHS.map((_, i) => i).filter(i => !ch2RecentTruthIdx.includes(i));
+      if (pool.length === 0) pool = CH2_TRUTHS.map((_, i) => i);
+      const idx = pool[Math.floor(Math.random() * pool.length)];
+      ch2RecentTruthIdx.push(idx);
+      if (ch2RecentTruthIdx.length > recentMax) ch2RecentTruthIdx.shift();
+      return CH2_TRUTHS[idx];
+    }
     let ch2Progress = 0;
     const CH2_WIN_COUNT = 8;
 
@@ -1065,7 +1091,7 @@
       handleFirstInteraction();
       muted = !muted;
       if (masterGain) masterGain.gain.value = muted ? 0 : 0.7;
-      muteBtn.textContent = muted ? '♪ AUDIO OFF' : '♪ AUDIO ON';
+      muteBtn.textContent = muted ? '♪ 音乐 关' : '♪ 音乐 开';
       muteBtn.style.color = muted ? '#7a8095' : '#38b6db';
       muteBtn.style.borderColor = muted ? '#7a8095' : '#38b6db';
     });
@@ -1747,22 +1773,22 @@
       const tx = player.x;
       const ty = player.y - 14;
       if (r < 0.4) {
-        fireAimedWord(b.x - 24, b.y - 14, tx, ty, 2.6, 'fast');
+        fireAimedWord(b.x - 24, b.y - 14, tx, ty, 1.3, 'fast');
       } else if (r < 0.6) {
-        fireAimedWord(b.x - 24, b.y - 18, tx, ty, 1.0, 'heavy');
+        fireAimedWord(b.x - 24, b.y - 18, tx, ty, 0.5, 'heavy');
       } else if (r < 0.85) {
         for (let i = 0; i < 3; i++) {
           setTimeout(() => {
             if (!boss.alive) return;
             fireAimedWord(boss.x - 24, boss.y - 14,
-              player.x, player.y - 14, 2.4, 'fast');
+              player.x, player.y - 14, 1.2, 'fast');
           }, i * 320);
         }
       } else {
         for (let i = 0; i < 3; i++) {
           setTimeout(() => {
             if (!boss.alive) return;
-            spawnWord(80 + Math.random() * 240, -20, 0, 1.8, 'falling');
+            spawnWord(80 + Math.random() * 240, -20, 0, 0.9, 'falling');
           }, i * 220);
         }
       }
@@ -1958,7 +1984,7 @@
     function fireBossCh2() {
       // 主掉落：绿色真话慢，红色陷阱快
       const isTruth = Math.random() < 0.42; // 42% 真话（难度提升）
-      const t = isTruth ? CH2_TRUTHS[Math.floor(Math.random() * CH2_TRUTHS.length)] : CH2_TRAPS[Math.floor(Math.random() * CH2_TRAPS.length)];
+      const t = isTruth ? pickCh2Truth() : CH2_TRAPS[Math.floor(Math.random() * CH2_TRAPS.length)];
       const wx = 50 + Math.random() * (W - 100);
       const spd = isTruth ? (0.5 + Math.random() * 0.3) : (2.0 + Math.random() * 0.8);
       spawnWord(wx, -30, 0, spd, isTruth ? 'truth' : 'trap', t);
@@ -1966,7 +1992,7 @@
       // 30% 概率同时再掉一个（加快节奏）
       if (Math.random() < 0.3) {
         const isTruth2 = Math.random() < 0.45;
-        const t2 = isTruth2 ? CH2_TRUTHS[Math.floor(Math.random() * CH2_TRUTHS.length)] : CH2_TRAPS[Math.floor(Math.random() * CH2_TRAPS.length)];
+        const t2 = isTruth2 ? pickCh2Truth() : CH2_TRAPS[Math.floor(Math.random() * CH2_TRAPS.length)];
         const wx2 = 50 + Math.random() * (W - 100);
         const spd2 = isTruth2 ? (0.5 + Math.random() * 0.3) : (2.0 + Math.random() * 0.8);
         spawnWord(wx2, -50, 0, spd2, isTruth2 ? 'truth' : 'trap', t2);
@@ -2440,7 +2466,7 @@
     // ============================================================
     function drawHUDCommon() {
       // 头发 HP
-      text('VITALITY · 头发', 8, 12, C.dim, 8);
+      text('头发', 8, 12, C.dim, 8);
       for (let i = 0; i < player.maxHp; i++) {
         rect(8 + i * 11, 16, 9, 6, i < player.hp ? C.red : C.darker);
         if (i < player.hp) rect(8 + i * 11, 16, 9, 1, C.cyanLt);
@@ -2594,26 +2620,20 @@
       if (stateTimer > 30) {
         const f2 = Math.min(1, (stateTimer - 30) / 30);
         ctx.globalAlpha = f2;
-        text('▌ CHARACTER FILE · 你的角色档案', W / 2, 108, C.cyan, 9, 'center');
-        text('品牌策略人 · Lv.5  ·  4A 乙方  ·  连续加班 14 天', W / 2, 122, C.text, 9, 'center');
-        text('— INITIAL STATS · 初始属性 —', W / 2, 142, C.dim, 8, 'center');
-        const leftX = 84, rightX = 252;
-        const valL = 224, valR = W - 84;
-        text('头发存活率', leftX, 158, C.text, 9);
-        text(`${player.hp}/${player.maxHp}`, valL, 158, C.green, 9, 'right');
-        text('客户改稿耐受', rightX, 158, C.text, 9);
-        text(stats.clientToleranceXP, valR, 158, C.green, 9, 'right');
-        text('抗黑话能力', leftX, 172, C.text, 9);
-        text(stats.blackTalkResist, valL, 172, C.cyan, 9, 'right');
-        text('朋友圈装逼指数', rightX, 172, C.text, 9);
-        text(stats.pretentiousness, valR, 172, C.purple, 9, 'right');
-        text('反问锐度', leftX, 186, C.text, 9);
-        text(stats.retortSharpness, valL, 186, C.cyan, 9, 'right');
-        text('AI 工具熟练度', rightX, 186, C.text, 9);
-        text(stats.aiResistance, valR, 186, C.purple, 9, 'right');
-        text('项目掌控感', leftX, 200, C.text, 9);
-        text(stats.projectControl, valL, 200, C.cyan, 9, 'right');
-        text('今夜任务 · 走过四道关卡，见证策略人的觉醒', W / 2, 226, C.yellow, 9, 'center');
+        // 视觉血条演示（放大版，与战斗 HUD 一致的样式）
+        const cellW = 22, cellH = 14, gap = 4;
+        const totalW = 6 * (cellW + gap) - gap;
+        const barX = (W - totalW) / 2;
+        const barY = 124;
+        for (let i = 0; i < 6; i++) {
+          rect(barX + i * (cellW + gap), barY, cellW, cellH, C.red);
+          rect(barX + i * (cellW + gap), barY, cellW, 2, C.cyanLt);
+        }
+        text('↑  你 的 "血 量 条"  =  你 的 头 发  ↑', W / 2, 156, C.cyan, 11, 'center');
+        text('（战斗时显示在画面左上角）', W / 2, 174, C.dim, 9, 'center');
+        text('被砸中一次，少一格。', W / 2, 198, C.text, 10, 'center');
+        text('掉  光  =  秃  头  =  Game  Over。', W / 2, 218, C.bossEye, 11, 'center');
+        text('（此处生发液品牌可赞助。）', W / 2, 240, C.dim, 9, 'center');
         ctx.globalAlpha = 1;
       }
       if (stateTimer > 30 && Math.floor(stateTimer / 30) % 2 === 0) {
@@ -2686,8 +2706,6 @@
         text(`[${ch}]`, cx + cardW / 2, cardY + cardH - 12, themeColor, 10, 'center');
       }
 
-      text('当前属性 · 抗黑话 ' + stats.blackTalkResist + '  反问锐度 ' + stats.retortSharpness + '  AI熟练度 ' + stats.aiResistance + '  品牌护盾 ' + stats.brandShield,
-        W / 2, H - 12, C.dim, 8, 'center');
 
       if (justPressed['1']) startChapter(1);
       if (justPressed['2']) startChapter(2);
@@ -2820,10 +2838,10 @@
     // ============================================================
     const READY_OBJECTIVES = {
       1: [
-        { label: '移动', desc: '方向键 / WASD 左右移动', color: '#38b6db' },
-        { label: '跳跃', desc: '空格 / W / ↑  跳过词条', color: '#38b6db' },
-        { label: '反问', desc: '按 1 / 2 / 3  发射反问光束消灭怪兽', color: '#ffec27' },
-        { label: '胜利', desc: '把黑话怪兽的血条打空即可通关', color: '#38b764' },
+        { label: '移动', desc: '方向键左右走，空格 / ↑ 跳跃', color: '#38b6db' },
+        { label: '攻击', desc: '狂按 1 / 2 / 3 ⚡ 发射反问光束！冷却很短，可以连按猛刷', color: '#ffec27' },
+        { label: '躲避', desc: '怪兽飞来的词条会扣血，跳起来 或 跑开 都行', color: '#ff6464' },
+        { label: '胜利', desc: '不停反问，把右边怪兽的血条打空 = 通关', color: '#38b764' },
       ],
       2: [
         { label: '接洞察', desc: '走进 绿色"▼真洞察" 词条，将它接住收集', color: '#38b764' },
@@ -2974,7 +2992,6 @@
           text(ch3Feedback.text, CH3_HIT_X + 50, CH3_TRACK_Y - 5, ch3Feedback.color, 14, 'left');
           ctx.globalAlpha = 1;
         }
-        text(`✓${parryHits}  ✗${parryMisses}  最高连击 ${ch3MaxCombo}`, W / 2, H - 6, C.dim, 8, 'center');
       }
 
       if (stateTimer < 60) {
@@ -3309,7 +3326,7 @@
         { t: '世界很吵，但你已身在真实之中。', c: C.gold, s: 14 },
         { t: '', c: C.dim, s: 6 },
         { t: `第一章·反问之刃   第二章·清醒之眼   第三章·实践真知   第四章·平衡之道`, c: C.dim, s: 10 },
-        { t: `战绩：抗黑话 ${stats.blackTalkResist} · 反问 ${stats.retortSharpness} · AI ${stats.aiResistance} · 品牌 ${stats.brandShield}`, c: C.darker, s: 9 },
+        { t: `战绩：剩余头发 ${player.hp}/${player.maxHp} · CH3 最高连击 ${ch3MaxCombo} · CH4 答对 ${ch4Picks.filter(p => p === 'b').length}/3 · 品牌资产 ${Math.floor(brandEquity)}/100`, c: C.darker, s: 9 },
       ];
 
       // 计算爬行参数
@@ -3461,7 +3478,7 @@
         `模糊 Brief → 虚假洞察 → AI 魔王 → ROI 暴君，全通了！\n\n` +
         `「世界很吵，但我已身在真实之中。」\n\n` +
         `四大技能：反问之刃 · 清醒之眼 · 实践真知 · 平衡之道\n` +
-        `属性：抗黑话 ${stats.blackTalkResist} · 反问锐度 ${stats.retortSharpness} · AI 熟练 ${stats.aiResistance} · 品牌护盾 ${stats.brandShield}\n\n` +
+        `战绩：剩余头发 ${player.hp}/${player.maxHp} · CH3 最高连击 ${ch3MaxCombo} · CH4 答对 ${ch4Picks.filter(p => p === 'b').length}/3 · 品牌资产 ${Math.floor(brandEquity)}/100\n\n` +
         `#策略人启示录 · 实战派策略大师`;
       await doShare(txt);
     }
