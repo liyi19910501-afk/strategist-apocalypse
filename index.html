@@ -500,6 +500,9 @@
         setting: '乙方·深夜修罗场',
         technique: '反问之刃',
         techniqueEn: 'COUNTER-QUESTION BLADE',
+        training: '清晰思考，敢于反问',
+        insightTitle: '假 · 清 晰',
+        insightBody: '未经质疑的 brief，不值得做。',
         quote: '形容词是客户的避雷针，名词才是问题的本体。',
         closer: '下次客户说"高级感"，你会笑着问回去：哪种高级感？',
       },
@@ -508,6 +511,9 @@
         setting: '巷战·城中村',
         technique: '清醒之眼',
         techniqueEn: 'THE SOBER EYE',
+        training: '离开桌面，挖真洞察',
+        insightTitle: '假 · 洞 察',
+        insightBody: '不到一线，永远不知道消费者真实在想什么。',
         quote: '数据会撒谎，但便利店的结账小票不会。',
         closer: '当你放下精英身段，真实的策略才刚刚开始。',
       },
@@ -516,6 +522,9 @@
         setting: '数字虚空',
         technique: '实践真知',
         techniqueEn: 'TRUTH IN PRACTICE',
+        training: '锤炼直觉，不拘形式',
+        insightTitle: '假 · 交 付',
+        insightBody: 'Token 不要钱，似是而非的废话被当作"解决方案"。',
         quote: 'AI 能写出一切，除了一个真实的人在干一件真实的事。',
         closer: '你用那不可计算的直觉，击穿了算法的防线。',
       },
@@ -524,6 +533,9 @@
         setting: '会议室·终局',
         technique: '平衡之道',
         techniqueEn: 'THE ART OF BALANCE',
+        training: '理解长期，走向平衡',
+        insightTitle: '假 · 确 定',
+        insightBody: '短期增长是确定的，但牺牲了长期可能性。',
         quote: '没有效果养不活当下，没有品牌等不到明天。',
         closer: '品牌和增长从不对立，你终于找到了那个平衡点。',
       },
@@ -3128,43 +3140,19 @@
       drawBoxBorder(cardX, cardY, cardW, cardH, C.gold);
       drawBoxBorder(cardX - 2, cardY - 2, cardW + 4, cardH + 4, C.gold);
 
-      text('▌▌  TECHNIQUE UNLOCKED · 解锁全新技能  ▌▌',
+      text('▌▌  解锁全新技能  ▌▌',
         W / 2, cardY + 14, C.gold, 9, 'center');
-      text(`【 ${info.technique} 】`, W / 2, cardY + 34, C.yellow, 16, 'center');
-      text(info.techniqueEn, W / 2, cardY + 46, C.dim, 8, 'center');
+      text(`【 ${info.technique} 】`, W / 2, cardY + 40, C.yellow, 16, 'center');
       rect(cardX + 30, cardY + 54, cardW - 60, 1, C.darker);
       text(info.quote, W / 2, cardY + 70, C.text, 10, 'center');
 
-      text('— PASSIVE STAT UP · 永久属性提升 —',
+      // —— 你看穿了什么（B 建议：把抽象属性换成 假 X 方法论翻译）
+      text('— 你 看 穿 了 什 么 —',
         W / 2, cardY + 88, C.cyan, 8, 'center');
+      text(`「 ${info.insightTitle} 」`, W / 2, cardY + 108, C.yellow, 13, 'center');
+      text(info.insightBody, W / 2, cardY + 128, C.cyanLt, 10, 'center');
 
-      const reward = CHAPTER_REWARDS[currentChapter];
-      const labelMap = {
-        blackTalkResist: '抗黑话能力',
-        retortSharpness: '反问锐度',
-        projectControl: '项目掌控感',
-        brandShield: '品牌护盾',
-        longTermVision: '长期视野',
-        truthDiscern: '真伪洞察',
-        aiResistance: 'AI 反套路',
-      };
-      let yi = 0;
-      for (const k in reward) {
-        const before = stats[k] - reward[k];
-        const after = stats[k];
-        text(`▸ ${labelMap[k] || k}`, cardX + 50, cardY + 104 + yi * 12, C.text, 9);
-        text(`${before} → ${after}`, W - cardX - 80, cardY + 104 + yi * 12, C.cyanLt, 9, 'right');
-        text(`+${reward[k]}`, W - cardX - 50, cardY + 104 + yi * 12, C.green, 9, 'right');
-        yi++;
-      }
-
-      let battleStat = `战绩：头发 ${player.hp}/${player.maxHp} · 命中 ${player.totalHitsTaken}`;
-      if (currentChapter === 2) battleStat += ` · 收集真话 ${ch2Progress}/${CH2_WIN_COUNT}`;
-      // v0.7: ch3 改用真实的 parry 统计
-      if (currentChapter === 3) battleStat += ` · 格挡 ✓${parryHits} ✗${parryMisses}`;
-      if (currentChapter === 4) battleStat += ` · 品牌 ${Math.floor(brandEquity)}`;
-      text(battleStat, W / 2, 214, C.dim, 9, 'center');
-      text(`「${info.closer}」`, W / 2, 230, C.cyanLt, 8, 'center');
+      text(`「${info.closer}」`, W / 2, 224, C.cyanLt, 9, 'center');
       if (Math.floor(stateTimer / 60) % 2 === 0) {
         // UI uses DOM buttons styled via CSS for Win state, no canvas text needed here
       }
@@ -3301,32 +3289,29 @@
       // 定义叙事文本块（每行 = {text, color, size, gap}）
       const crawlLines = [
         { t: '你跨过了「第一章 · 模糊 Brief」，解锁了「反问之刃」——', c: C.yellow, s: 12 },
-        { t: '当客户说"高级感"的时候，你学会了笑着问回去：', c: C.text, s: 11 },
-        { t: '"哪种高级感？给谁看的？在什么场景下？"', c: C.cyanLt, s: 11 },
-        { t: '你终于明白：形容词是客户的避雷针，名词才是问题的本体。', c: C.text, s: 11 },
+        { t: '你识破了「假 · 清晰」。', c: C.cyanLt, s: 12 },
+        { t: '未经质疑的 brief，不值得做。', c: C.text, s: 11 },
         { t: '', c: C.dim, s: 8 },
-        { t: '你跨过了「第二章 · 虚假 insight」，解锁了「清醒之眼」——', c: C.yellow, s: 12 },
-        { t: '你走出了 PPT 和 TVC，走进了便利店和城中村。', c: C.text, s: 11 },
-        { t: '你发现：买你产品的人，从来不在你的用户画像里。', c: C.cyanLt, s: 11 },
-        { t: '数据会撒谎，但便利店的结账小票不会。', c: C.text, s: 11 },
+        { t: '你跨过了「第二章 · 虚假 Insight」，解锁了「清醒之眼」——', c: C.yellow, s: 12 },
+        { t: '你识破了「假 · 洞察」。', c: C.cyanLt, s: 12 },
+        { t: '不到一线，永远不知道消费者真实在想什么。', c: C.text, s: 11 },
         { t: '', c: C.dim, s: 8 },
         { t: '你跨过了「第三章 · AI 魔王」，解锁了「实践真知」——', c: C.yellow, s: 12 },
-        { t: '当 AI 学会了 12,000 套策略框架的时候，', c: C.text, s: 11 },
-        { t: '你证明了：它能写出一切，', c: C.text, s: 11 },
-        { t: '除了一个真实的人在干一件真实的事。', c: C.cyanLt, s: 11 },
+        { t: '你识破了「假 · 交付」。', c: C.cyanLt, s: 12 },
+        { t: 'Token 不要钱，似是而非的废话被当作"解决方案"。', c: C.text, s: 11 },
         { t: '', c: C.dim, s: 8 },
         { t: '你跨过了「第四章 · ROI 暴君」，解锁了「平衡之道」——', c: C.yellow, s: 12 },
-        { t: '当 CEO 问你"品牌还要不要做"的时候，', c: C.text, s: 11 },
-        { t: '你没有慌。你说：', c: C.text, s: 11 },
-        { t: '"没有效果养不活当下，没有品牌等不到明天。"', c: C.cyanLt, s: 11 },
-        { t: '品牌和增长从不对立，你终于找到了那个平衡点。', c: C.text, s: 11 },
+        { t: '你识破了「假 · 确定」。', c: C.cyanLt, s: 12 },
+        { t: '短期增长是确定的，但牺牲了长期可能性。', c: C.text, s: 11 },
         { t: '', c: C.dim, s: 8 },
         { t: '—————————————————', c: C.darker, s: 10 },
         { t: '', c: C.dim, s: 6 },
-        { t: '世界很吵，但你已身在真实之中。', c: C.gold, s: 14 },
+        { t: '四把武器，一种姿态：', c: C.text, s: 12 },
+        { t: '看穿假象，回到真实。', c: C.cyanLt, s: 13 },
+        { t: '', c: C.dim, s: 6 },
+        { t: '世界变化很快，策略人始终成长。', c: C.gold, s: 14 },
         { t: '', c: C.dim, s: 6 },
         { t: `第一章·反问之刃   第二章·清醒之眼   第三章·实践真知   第四章·平衡之道`, c: C.dim, s: 10 },
-        { t: `战绩：剩余头发 ${player.hp}/${player.maxHp} · CH3 最高连击 ${ch3MaxCombo} · CH4 答对 ${ch4Picks.filter(p => p === 'b').length}/3 · 品牌资产 ${Math.floor(brandEquity)}/100`, c: C.darker, s: 9 },
       ];
 
       // 计算爬行参数
@@ -3373,7 +3358,7 @@
         text('荣誉出品', W / 2, H / 2 + 24, C.dim, 9, 'center');
 
         if (Math.floor(stateTimer / 40) % 2 === 0) {
-          text('「世界很吵，但你已身在真实之中。」', W / 2, H / 2 + 50, C.gold, 10, 'center');
+          text('「世界变化很快，策略人始终成长。」', W / 2, H / 2 + 50, C.gold, 10, 'center');
         }
       } else {
         // === 字幕滚动中 ===
@@ -3476,9 +3461,8 @@
       const txt =
         `我通关了《品牌策略人启示录》四章完整版。\n` +
         `模糊 Brief → 虚假洞察 → AI 魔王 → ROI 暴君，全通了！\n\n` +
-        `「世界很吵，但我已身在真实之中。」\n\n` +
-        `四大技能：反问之刃 · 清醒之眼 · 实践真知 · 平衡之道\n` +
-        `战绩：剩余头发 ${player.hp}/${player.maxHp} · CH3 最高连击 ${ch3MaxCombo} · CH4 答对 ${ch4Picks.filter(p => p === 'b').length}/3 · 品牌资产 ${Math.floor(brandEquity)}/100\n\n` +
+        `「世界变化很快，策略人始终成长。」\n\n` +
+        `四大技能：反问之刃 · 清醒之眼 · 实践真知 · 平衡之道\n\n` +
         `#策略人启示录 · 实战派策略大师`;
       await doShare(txt);
     }
