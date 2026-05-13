@@ -388,8 +388,9 @@
   <div id="footer">
     <div class="ctrl-row">
       <span class="key">方向键</span> 移动 &nbsp;&nbsp;|&nbsp;&nbsp;
-      <span class="key">空格 / ↑</span> 跳跃 &nbsp;&nbsp;|&nbsp;&nbsp;
-      <span class="key">1</span><span class="key">2</span><span class="key">3</span> 行动 / 选择答案
+      <span class="key">↑</span> 跳跃 &nbsp;&nbsp;|&nbsp;&nbsp;
+      <span class="key">空格</span> 发射反问 &nbsp;&nbsp;|&nbsp;&nbsp;
+      <span class="key">1</span><span class="key">2</span><span class="key">3</span> 选择答案
     </div>
     <div class="meta-row">
       <span class="accent">MADE BY SYSTEM2</span>
@@ -472,6 +473,9 @@
     let currentChapter = 1;
     let chaptersWon = [false, false, false, false];
     let prologueShown = false;
+    let prologuePage = 0;  // v1.4: 序章拆成两页：0=故事铺垫，1=血量+键盘操作
+    // v1.4: 第一关互动教学（仅首次进入 Ch1 战斗时触发一次）
+    let ch1Tutorial = { active: false, step: 0, fadeOut: 0, doneOnce: false };
 
     // === 数值体系 ===
     const INITIAL_STATS = {
@@ -1647,7 +1651,8 @@
       if (keys['arrowright'] || keys['d']) move += 1;
       p.vx = move * 2;
       if (move !== 0) p.facing = move;
-      if ((keys[' '] || keys['arrowup'] || keys['w']) && !p.jumping) {
+      // v1.4: 空格不再跳跃（改为发射键）。跳跃只剩 ↑ / W
+      if ((keys['arrowup'] || keys['w']) && !p.jumping) {
         p.vy = -7; p.jumping = true;
         beep(440, 0.05, 'square', 0.04);
       }
@@ -1774,35 +1779,21 @@
       if (b.attackTimer <= 0) {
         fireBossCh1();
         const ratio = b.hp / b.maxHp;
-        b.attackTimer = 50 + Math.random() * 40 * ratio;
+        // v1.4: 大幅放慢节奏，约 2.2~3.3 秒一发，给新手喘息空间
+        b.attackTimer = 130 + Math.random() * 60 * ratio;
       }
       if (b.hitFlash > 0) b.hitFlash--;
     }
 
     function fireBossCh1() {
+      // v1.4: 简化为单弹幕（不再有三连发 / 天降词条），新手友好
       const b = boss;
-      const r = Math.random();
       const tx = player.x;
       const ty = player.y - 14;
-      if (r < 0.4) {
-        fireAimedWord(b.x - 24, b.y - 14, tx, ty, 1.3, 'fast');
-      } else if (r < 0.6) {
-        fireAimedWord(b.x - 24, b.y - 18, tx, ty, 0.5, 'heavy');
-      } else if (r < 0.85) {
-        for (let i = 0; i < 3; i++) {
-          setTimeout(() => {
-            if (!boss.alive) return;
-            fireAimedWord(boss.x - 24, boss.y - 14,
-              player.x, player.y - 14, 1.2, 'fast');
-          }, i * 320);
-        }
+      if (Math.random() < 0.7) {
+        fireAimedWord(b.x - 24, b.y - 14, tx, ty, 1.2, 'fast');
       } else {
-        for (let i = 0; i < 3; i++) {
-          setTimeout(() => {
-            if (!boss.alive) return;
-            spawnWord(80 + Math.random() * 240, -20, 0, 0.9, 'falling');
-          }, i * 220);
-        }
+        fireAimedWord(b.x - 24, b.y - 18, tx, ty, 0.6, 'heavy');
       }
       beep(180, 0.15, 'sawtooth', 0.04);
     }
@@ -1864,6 +1855,22 @@
 
     function fireRetort(slot) {
       if (currentChapter === 3) return; // CH3 使用格挡逻辑，不发射反问
+
+      // v1.4: 第一关 —— 单键发射 + 固定文案，零复杂度
+      if (currentChapter === 1) {
+        if (retortCD[0] > 0) return;
+        beams.push({
+          x: player.x + 6, y: player.y - 16,
+          vx: 3, t: 'brief 想清楚了么？',
+          dmg: 24, life: 180,
+          color: C.cyan,
+        });
+        retortCD[0] = 25; // 极短冷却（约 0.4 秒）
+        beep(800, 0.08, 'square', 0.05);
+        return;
+      }
+
+      // Ch2 / Ch4 维持原槽位发射逻辑
       if (retortCD[slot] > 0 || !retortSlots[slot]) return;
       const b = {
         x: player.x + 6, y: player.y - 16,
@@ -1880,6 +1887,14 @@
 
     function updateRetorts() {
       for (let i = 0; i < 3; i++) if (retortCD[i] > 0) retortCD[i]--;
+
+      // v1.4: 第一关用空格发射
+      if (currentChapter === 1) {
+        if (justPressed[' ']) fireRetort(0);
+        return;
+      }
+
+      // 其他章节维持 1/2/3 槽位逻辑
       if (justPressed['1']) fireRetort(0);
       if (justPressed['2']) fireRetort(1);
       if (justPressed['3']) fireRetort(2);
@@ -2607,7 +2622,15 @@
     // ============================================================
     //  场景：序章
     // ============================================================
+    // v1.4: 简易键盘按键绘制
+    function drawKeyCap(x, y, w, h, label, labelSize) {
+      rect(x, y, w, h, C.darker);
+      drawBoxBorder(x, y, w, h, C.cyan);
+      text(label, x + w / 2, y + h / 2 + 4, C.white, labelSize || 10, 'center');
+    }
+
     function drawPrologue() {
+      // 通用背景（星点）
       ctx.fillStyle = C.bgDeep;
       ctx.fillRect(0, 0, W, H);
       for (let i = 0; i < 30; i++) {
@@ -2619,46 +2642,89 @@
       }
       ctx.globalAlpha = 1;
 
-      text('— PROLOGUE · 序章 —', W / 2, 18, C.gold, 9, 'center');
-      const fade = Math.min(1, stateTimer / 30);
-      ctx.globalAlpha = fade;
-      text('2026 年。品牌行业正在静默崩塌。', W / 2, 36, C.text, 10, 'center');
-      text('AI 一夜之间学会了所有的"创意套路"。', W / 2, 50, C.text, 10, 'center');
-      text('客户开始用 ChatGPT 写自己的 Brief。', W / 2, 64, C.text, 10, 'center');
-      text('而你，还在凌晨 3 点改稿。', W / 2, 84, C.bossEye, 10, 'center');
-      ctx.globalAlpha = 1;
-      rect(60, 96, W - 120, 1, C.gold);
+      if (prologuePage === 0) {
+        // ===== 第一页：故事铺垫 =====
+        text('— PROLOGUE · 序章 —', W / 2, 32, C.gold, 11, 'center');
+        const fade = Math.min(1, stateTimer / 30);
+        ctx.globalAlpha = fade;
+        text('2026 年。品牌行业正在静默崩塌。', W / 2, 80, C.text, 11, 'center');
+        text('AI 一夜之间学会了所有的"创意套路"。', W / 2, 106, C.text, 11, 'center');
+        text('客户开始用 ChatGPT 写自己的 Brief。', W / 2, 132, C.text, 11, 'center');
 
-      if (stateTimer > 30) {
-        const f2 = Math.min(1, (stateTimer - 30) / 30);
-        ctx.globalAlpha = f2;
-        // 视觉血条演示（放大版，与战斗 HUD 一致的样式）
-        const cellW = 22, cellH = 14, gap = 4;
+        if (stateTimer > 60) {
+          const f2 = Math.min(1, (stateTimer - 60) / 30);
+          ctx.globalAlpha = f2;
+          text('而你，还在凌晨 3 点改稿。', W / 2, 172, C.bossEye, 13, 'center');
+        }
+        ctx.globalAlpha = 1;
+
+        if (stateTimer > 90 && Math.floor(stateTimer / 28) % 2 === 0) {
+          text('▼ ENTER / 点击 / 空格 继续 ▼', W / 2, 238, C.white, 10, 'center');
+        }
+      } else {
+        // ===== 第二页：血量 + 键盘操作 =====
+        text('▌ 开 始 之 前 · 你 要 知 道 的 两 件 事 ▐', W / 2, 18, C.cyan, 11, 'center');
+        rect(40, 24, W - 80, 1, C.cyan);
+
+        // ① 血量
+        text('①   你 的 血 量  =  你 的 头 发', W / 2, 42, C.yellow, 10, 'center');
+        const cellW = 18, cellH = 11, gap = 3;
         const totalW = 6 * (cellW + gap) - gap;
         const barX = (W - totalW) / 2;
-        const barY = 124;
         for (let i = 0; i < 6; i++) {
-          rect(barX + i * (cellW + gap), barY, cellW, cellH, C.red);
-          rect(barX + i * (cellW + gap), barY, cellW, 2, C.cyanLt);
+          rect(barX + i * (cellW + gap), 54, cellW, cellH, C.red);
+          rect(barX + i * (cellW + gap), 54, cellW, 2, C.cyanLt);
         }
-        text('↑  你 的 "血 量 条"  =  你 的 头 发  ↑', W / 2, 156, C.cyan, 11, 'center');
-        text('（战斗时显示在画面左上角）', W / 2, 174, C.dim, 9, 'center');
-        text('被砸中一次，少一格。', W / 2, 198, C.text, 10, 'center');
-        text('掉  光  =  秃  头  =  Game  Over。', W / 2, 218, C.bossEye, 11, 'center');
-        text('（此处生发液品牌可赞助。）', W / 2, 240, C.dim, 9, 'center');
-        ctx.globalAlpha = 1;
+        text('被砸中一次，少一格。掉光 = 秃头 = Game Over。', W / 2, 80, C.text, 9, 'center');
+        text('（战斗时显示在画面左上角）', W / 2, 92, C.dim, 8, 'center');
+
+        rect(40, 102, W - 80, 1, C.darker);
+
+        // ② 键盘操作
+        text('②   三 个 按 键 区 域', W / 2, 116, C.yellow, 10, 'center');
+
+        // —— 方向键（倒 T 排列）——
+        const arrCX = 80;
+        drawKeyCap(arrCX - 11, 130, 22, 16, '↑', 11);
+        drawKeyCap(arrCX - 33, 150, 22, 16, '←', 11);
+        drawKeyCap(arrCX - 11, 150, 22, 16, '↓', 11);
+        drawKeyCap(arrCX + 11, 150, 22, 16, '→', 11);
+        text('方 向 键', arrCX, 184, C.cyan, 9, 'center');
+        text('移 动 ·  ↑ 跳 跃', arrCX, 198, C.text, 8, 'center');
+
+        // —— 空格键 ——
+        const spX = 158, spW = 104;
+        drawKeyCap(spX, 150, spW, 16, '空 格 / SPACE', 9);
+        text('空 格 键', spX + spW / 2, 184, C.cyan, 9, 'center');
+        text('发 射 反 问', spX + spW / 2, 198, C.text, 8, 'center');
+
+        // —— 1 / 2 / 3 ——
+        const numStartX = 305;
+        drawKeyCap(numStartX, 150, 22, 16, '1', 11);
+        drawKeyCap(numStartX + 26, 150, 22, 16, '2', 11);
+        drawKeyCap(numStartX + 52, 150, 22, 16, '3', 11);
+        text('1 / 2 / 3', numStartX + 37, 184, C.cyan, 9, 'center');
+        text('选 择 答 案 / 节 奏', numStartX + 37, 198, C.text, 8, 'center');
+
+        if (stateTimer > 15 && Math.floor(stateTimer / 28) % 2 === 0) {
+          text('▼ ENTER 进 入 第 一 章 ▼', W / 2, 238, C.white, 11, 'center');
+        }
       }
-      if (stateTimer > 30 && Math.floor(stateTimer / 30) % 2 === 0) {
-        text('▼ ENTER / 点击 / 空格 进入第一章 ▼', W / 2, 252, C.white, 10, 'center');
-      }
-      // v0.8: 序章后直接进 CH1（阈值从 30 改成 5，避免按太快被吞）
+
+      // ENTER / 空格 / 点击：翻页或进入第一章
       if (stateTimer > 5 && (justPressed['enter'] || justPressed[' '])) {
-        prologueShown = true;
-        currentChapter = 1;
-        resetCombatEntities();
-        state = S.INTRO;
-        stateTimer = 0;
-        startBGM('ch1');
+        if (prologuePage === 0) {
+          prologuePage = 1;
+          stateTimer = 0;
+        } else {
+          prologueShown = true;
+          prologuePage = 0;
+          currentChapter = 1;
+          resetCombatEntities();
+          state = S.INTRO;
+          stateTimer = 0;
+          startBGM('ch1');
+        }
       }
     }
 
@@ -2750,14 +2816,12 @@
       text('▶ 03:14 AM · 深夜修罗场', 30, 158, C.cyan, 9);
       const lines = [
         '你已经改到第 7 版。办公室只剩你一个人。',
-        '老王（微信）：客户那边又改了……',
-        '"要更网感，更高级感，更破圈，更颗粒度。"',
-        '你看着 PPT 里堆满的形容词，',
-        '它们正凝聚成一个会喷"黑话"的怪兽。',
+        '客户又改了："要更网感、更高级感、更破圈、更颗粒度。"',
+        '那些形容词，正凝聚成一个会喷"黑话"的怪兽。',
       ];
       for (let i = 0; i < lines.length; i++) {
-        const c = i === 1 || i === 2 ? C.cyanLt : (i === 4 ? C.bossEye : C.text);
-        text(lines[i], 30, 174 + i * 13, c, 9);
+        const c = i === 1 ? C.cyanLt : (i === 2 ? C.bossEye : C.text);
+        text(lines[i], 30, 180 + i * 18, c, 10);
       }
     }
 
@@ -2850,9 +2914,7 @@
     // ============================================================
     const READY_OBJECTIVES = {
       1: [
-        { label: '移动', desc: '方向键左右走，空格 / ↑ 跳跃', color: '#38b6db' },
-        { label: '攻击', desc: '狂按 1 / 2 / 3 ⚡ 发射反问光束！冷却很短，可以连按猛刷', color: '#ffec27' },
-        { label: '躲避', desc: '怪兽飞来的词条会扣血，跳起来 或 跑开 都行', color: '#ff6464' },
+        { label: '操作', desc: '↑ 跳过攻击，空格 反问 boss', color: '#38b6db' },
         { label: '胜利', desc: '不停反问，把右边怪兽的血条打空 = 通关', color: '#38b764' },
       ],
       2: [
@@ -2867,7 +2929,7 @@
         { label: '胜利', desc: '把 AI 魔王的血条打空即可通关', color: '#38b764' },
       ],
       4: [
-        { label: '移动', desc: '方向键 / WASD 左右移动，空格跳跃躲弹幕', color: '#38b6db' },
+        { label: '移动', desc: '方向键左右移动，↑ 键跳跃躲弹幕', color: '#38b6db' },
         { label: '决策', desc: '弹出选择题时 按 1 / 2 / 3 做出你的判断', color: '#fbbf24' },
         { label: '品牌', desc: '左上品牌资产条不能归零，选错会扣品牌分', color: '#22d3ee' },
         { label: '胜利', desc: '答完 3 道题并至少答对 1 题即可通关', color: '#38b764' },
@@ -2909,9 +2971,10 @@
 
       // 操作提示
       const ctrlY = startY + objs.length * rowH + 16;
-      text('方向键/WASD 移动', W / 2 - 80, ctrlY, C.dim, 8, 'center');
-      text('空格/↑/W 跳跃', W / 2, ctrlY, C.dim, 8, 'center');
-      text('1 / 2 / 3 行动', W / 2 + 80, ctrlY, C.dim, 8, 'center');
+      text('方向键 移动', W / 2 - 90, ctrlY, C.dim, 8, 'center');
+      text('↑ 跳跃', W / 2 - 25, ctrlY, C.dim, 8, 'center');
+      text('空格 反问', W / 2 + 35, ctrlY, C.dim, 8, 'center');
+      text('1 / 2 / 3 选择', W / 2 + 100, ctrlY, C.dim, 8, 'center');
 
       // 开始战斗按钮（闪烁）
       if (Math.floor(stateTimer / 22) % 2 === 0) {
@@ -2925,11 +2988,45 @@
       if (stateTimer > 5 && (justPressed['enter'] || justPressed[' '])) {
         state = S.FIGHT; stateTimer = 0;
         if (currentChapter !== 3) refillRetorts();
+        // v1.4: 首次进入 Ch1 战斗 → 触发互动教学
+        if (currentChapter === 1 && !ch1Tutorial.doneOnce) {
+          ch1Tutorial.active = true;
+          ch1Tutorial.step = 0;
+          ch1Tutorial.fadeOut = 0;
+        }
       }
     }
 
     // ============================================================
     function updateFight() {
+      // v1.4: Ch1 互动教学 —— 冻结 boss/词条，监听玩家"跳"和"反问"
+      if (currentChapter === 1 && ch1Tutorial.active) {
+        updatePlayer();
+        updateRetorts();
+        updateBeams();
+        updateParticles();
+        // 等 READY splash 结束后再监听玩家输入（避免误推进）
+        if (stateTimer > 60) {
+          if (ch1Tutorial.step === 0) {
+            if (justPressed['arrowup'] || justPressed['w']) {
+              ch1Tutorial.step = 1;
+            }
+          } else if (ch1Tutorial.step === 1) {
+            if (justPressed[' ']) {
+              ch1Tutorial.step = 2;
+              ch1Tutorial.fadeOut = 60;
+            }
+          } else if (ch1Tutorial.step === 2) {
+            ch1Tutorial.fadeOut--;
+            if (ch1Tutorial.fadeOut <= 0) {
+              ch1Tutorial.active = false;
+              ch1Tutorial.doneOnce = true;
+            }
+          }
+        }
+        return;
+      }
+
       updatePlayer();
       if (currentChapter === 1) {
         updateBossCh1();
@@ -2984,7 +3081,7 @@
       drawHUDBossBar();
 
       // 1/2/3 槽位 - 仅 CH1 显示
-      if (currentChapter === 1) drawRetortSlots();
+      // v1.4: Ch1 不再显示 1/2/3 反问槽（改为空格单键发射）
 
       if (currentChapter === 4) {
         drawHUDBrandBar();
@@ -3011,6 +3108,29 @@
         ctx.globalAlpha = a;
         rect(0, 0, W, H, C.bgDeep);
         text('READY', W / 2, H / 2, C.white, 24, 'center');
+        ctx.globalAlpha = 1;
+      }
+
+      // v1.4: Ch1 互动教学覆盖层
+      if (currentChapter === 1 && ch1Tutorial.active && stateTimer > 30) {
+        const pulse = 0.75 + Math.sin(stateTimer * 0.18) * 0.25;
+        let fadeMul = 1;
+        if (ch1Tutorial.step === 2) {
+          fadeMul = Math.max(0, ch1Tutorial.fadeOut / 60);
+        }
+        ctx.globalAlpha = pulse * fadeMul;
+        // 教学卡片
+        rect(W / 2 - 150, 68, 300, 32, C.bgDeep);
+        drawBoxBorder(W / 2 - 150, 68, 300, 32, C.yellow);
+        let prompt = '';
+        if (ch1Tutorial.step === 0) {
+          prompt = '↑   按"上"键，试着跳一下！';
+        } else if (ch1Tutorial.step === 1) {
+          prompt = '✓ 漂亮！现在按 空格 反问 boss';
+        } else {
+          prompt = '✓ ✓  开始真正的战斗！';
+        }
+        text(prompt, W / 2, 90, C.yellow, 12, 'center');
         ctx.globalAlpha = 1;
       }
     }
@@ -3598,6 +3718,8 @@
       stats = { ...INITIAL_STATS };
       chaptersWon = [false, false, false, false];
       prologueShown = false;
+      prologuePage = 0;
+      ch1Tutorial = { active: false, step: 0, fadeOut: 0, doneOnce: false };
       hideButtons();
       state = S.TITLE;
       stateTimer = 0;
