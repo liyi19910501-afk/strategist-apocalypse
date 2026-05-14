@@ -3123,8 +3123,8 @@
         // 教学期间玩家无敌
         player.iframes = Math.max(player.iframes, 3);
         if (stateTimer > 60) {
-          // step 0/1/2：每步放一颗对应颜色的慢速音符
-          if (ch3Tutorial.step < 3 && ch3Tutorial.spawnedAtStep !== ch3Tutorial.step) {
+          // v1.4: 只做 2 步（不再 123 都测）。第 0 步发蓝色(1)，第 1 步发粉色(2)。
+          if (ch3Tutorial.step < 2 && ch3Tutorial.spawnedAtStep !== ch3Tutorial.step) {
             ch3Notes.push({
               x: W + 40,
               slot: ch3Tutorial.step,
@@ -3138,11 +3138,11 @@
           // 检测当前音符是否离开（被击中或飞过）
           if (ch3Tutorial.spawnedAtStep === ch3Tutorial.step && ch3Notes.length === 0) {
             ch3Tutorial.step++;
-            if (ch3Tutorial.step >= 3) {
+            if (ch3Tutorial.step >= 2) {
               ch3Tutorial.fadeOut = 90;
             }
           }
-          if (ch3Tutorial.step >= 3) {
+          if (ch3Tutorial.step >= 2) {
             ch3Tutorial.fadeOut--;
             if (ch3Tutorial.fadeOut <= 0) {
               ch3Tutorial.active = false;
@@ -3284,22 +3284,22 @@
         }
         ctx.globalAlpha = 1;
       }
-      // v1.4: Ch3 互动教学浮窗
+      // v1.4: Ch3 互动教学浮窗（2 步测试足够）
       if (currentChapter === 3 && ch3Tutorial.active && stateTimer > 30) {
         const pulse = 0.75 + Math.sin(stateTimer * 0.18) * 0.25;
         let fadeMul = 1;
-        if (ch3Tutorial.step >= 3) fadeMul = Math.max(0, ch3Tutorial.fadeOut / 90);
+        if (ch3Tutorial.step >= 2) fadeMul = Math.max(0, ch3Tutorial.fadeOut / 90);
         ctx.globalAlpha = pulse * fadeMul;
-        rect(W / 2 - 170, 64, 340, 36, C.bgDeep);
-        drawBoxBorder(W / 2 - 170, 64, 340, 36, C.yellow);
+        rect(W / 2 - 180, 60, 360, 44, C.bgDeep);
+        drawBoxBorder(W / 2 - 180, 60, 360, 44, C.yellow);
         if (ch3Tutorial.step === 0) {
-          text('① 蓝 色 词 条 飞 来 时 → 按 1', W / 2, 84, '#38b6db', 12, 'center');
+          text('当数字飞到左侧圆圈区域时，按下对应数字', W / 2, 78, C.cyanLt, 10, 'center');
+          text('① 蓝色 1 来了 → 按 键盘 1', W / 2, 96, '#38b6db', 11, 'center');
         } else if (ch3Tutorial.step === 1) {
-          text('② 粉 色 词 条 飞 来 时 → 按 2', W / 2, 84, C.glitchPink, 12, 'center');
-        } else if (ch3Tutorial.step === 2) {
-          text('③ 绿 色 词 条 飞 来 时 → 按 3', W / 2, 84, '#7be88f', 12, 'center');
+          text('当数字飞到左侧圆圈区域时，按下对应数字', W / 2, 78, C.cyanLt, 10, 'center');
+          text('② 粉色 2 来了 → 按 键盘 2', W / 2, 96, C.glitchPink, 11, 'center');
         } else {
-          text('✓ ✓ ✓  开始真正的关卡！', W / 2, 84, C.yellow, 12, 'center');
+          text('✓ ✓  开始真正的关卡！', W / 2, 86, C.yellow, 13, 'center');
         }
         ctx.globalAlpha = 1;
       }
@@ -3608,9 +3608,6 @@
         { t: '短期增长是确定的，但牺牲了长期可能性。', c: C.text, s: 11 },
         { t: '', c: C.dim, s: 8 },
         { t: '—————————————————', c: C.darker, s: 10 },
-        { t: '', c: C.dim, s: 6 },
-        { t: '四次看穿，一种姿态：', c: C.text, s: 12 },
-        { t: '看穿假象，回到真实。', c: C.cyanLt, s: 13 },
         { t: '', c: C.dim, s: 6 },
         { t: '世界变化很快，策略人始终成长。', c: C.gold, s: 14 },
       ];
