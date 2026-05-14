@@ -342,7 +342,7 @@
     <div class="vignette"></div>
     <button id="muteBtn">♪ 音乐 开</button>
     <button id="backBtn">← 返回标题</button>
-    <button id="pauseBtn">⏸ 暂停</button>
+    <button id="pauseBtn">⏸ 按 P 暂停</button>
 
     <div class="game-buttons" id="winButtons">
       <button class="game-btn secondary" id="btnNext">▶ 下一章</button>
@@ -374,7 +374,7 @@
     <div id="touchControls">
       <div class="touch-pad-left">
         <button class="touch-btn" data-key="a">←</button>
-        <button class="touch-btn jump" data-key=" ">JUMP</button>
+        <button class="touch-btn jump" data-key="arrowup">JUMP</button>
         <button class="touch-btn" data-key="d">→</button>
       </div>
       <div class="touch-pad-right">
@@ -389,7 +389,7 @@
     <div class="ctrl-row">
       <span class="key">方向键</span> 移动 &nbsp;&nbsp;|&nbsp;&nbsp;
       <span class="key">↑</span> 跳跃 &nbsp;&nbsp;|&nbsp;&nbsp;
-      <span class="key">空格</span> 发射反问 &nbsp;&nbsp;|&nbsp;&nbsp;
+      <span class="key">空格</span>：发射子弹 &nbsp;&nbsp;|&nbsp;&nbsp;
       <span class="key">1</span><span class="key">2</span><span class="key">3</span> 选择答案
     </div>
     <div class="meta-row">
@@ -476,6 +476,9 @@
     let prologuePage = 0;  // v1.4: 序章拆成两页：0=故事铺垫，1=血量+键盘操作
     // v1.4: 第一关互动教学（仅首次进入 Ch1 战斗时触发一次）
     let ch1Tutorial = { active: false, step: 0, fadeOut: 0, doneOnce: false };
+    // v1.4: 第二、三关互动式教学（在真实游戏环境中分步引导）
+    let ch2Tutorial = { active: false, step: 0, spawnedAtStep: -1, fadeOut: 0, doneOnce: false };
+    let ch3Tutorial = { active: false, step: 0, spawnedAtStep: -1, fadeOut: 0, doneOnce: false };
 
     // === 数值体系 ===
     const INITIAL_STATS = {
@@ -548,14 +551,31 @@
     // === 输入 ===
     const keys = {};
     const justPressed = {};
-    let firstInteractionDone = false;
+    // v1.4 修复：之前 mousemove 会提前消耗 firstInteractionDone 但 mousemove 不算用户手势,
+    // AudioContext 实际仍被浏览器挂起 → ENTER 之后没声音。
+    // 改成幂等版：每次用户手势都尝试 resume + startBGM，直到真正跑起来为止。
+    let bgmStarted = false;
     function handleFirstInteraction() {
-      if (firstInteractionDone) return;
-      firstInteractionDone = true;
       ensureAudio();
-      startBGM('title');
+      if (!audioCtx) return;
+      const tryStart = () => {
+        if (!bgmStarted && audioCtx.state === 'running') {
+          startBGM('title');
+          bgmStarted = true;
+        }
+      };
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume().then(tryStart).catch(() => {});
+      } else {
+        tryStart();
+      }
     }
     window.addEventListener('keydown', e => {
+      // v1.4 BUG 修复：任意键按下时，把焦点从 DOM 按钮上移开
+      // 否则 ENTER/SPACE 会再次触发上次点击过的按钮（如 音乐开关、暂停、重玩）
+      if (document.activeElement && document.activeElement.tagName === 'BUTTON') {
+        document.activeElement.blur();
+      }
       const lk = e.key.toLowerCase();
       if (!keys[lk]) justPressed[lk] = true;
       keys[lk] = true;
@@ -563,7 +583,7 @@
       if (e.key === 'Escape' || e.key.toLowerCase() === 'p') {
         if (state === S.FIGHT) {
           paused = !paused;
-          pauseBtn.textContent = paused ? '▶ 继续' : '⏸ 暂停';
+          pauseBtn.textContent = paused ? '▶ 按 P 继续' : '⏸ 按 P 暂停';
           pauseBtn.style.color = paused ? '#38b6db' : '#ffec27';
           pauseBtn.style.borderColor = paused ? '#38b6db' : '#ffec27';
         }
@@ -572,7 +592,9 @@
     });
     window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
     window.addEventListener('mousedown', handleFirstInteraction);
+    // v1.4: 触屏/指针操作（mousemove 不算用户手势，故移除）
     window.addEventListener('touchstart', handleFirstInteraction, { passive: true });
+    window.addEventListener('pointerdown', handleFirstInteraction);
 
     // v0.8 修复：点击 canvas 等同于按 ENTER（解决某些环境下键盘不生效的问题，也兼容移动端）
     function simulateEnter() {
@@ -1096,9 +1118,10 @@
     pauseBtn.addEventListener('click', () => {
       if (state !== S.FIGHT) return;
       paused = !paused;
-      pauseBtn.textContent = paused ? '▶ 继续' : '⏸ 暂停';
+      pauseBtn.textContent = paused ? '▶ 按 P 继续' : '⏸ 按 P 暂停';
       pauseBtn.style.color = paused ? '#38b6db' : '#ffec27';
       pauseBtn.style.borderColor = paused ? '#38b6db' : '#ffec27';
+      pauseBtn.blur(); // v1.4: 防止焦点滞留导致 ENTER 误触发
     });
 
     const muteBtn = document.getElementById('muteBtn');
@@ -1110,6 +1133,7 @@
       muteBtn.textContent = muted ? '♪ 音乐 关' : '♪ 音乐 开';
       muteBtn.style.color = muted ? '#7a8095' : '#38b6db';
       muteBtn.style.borderColor = muted ? '#7a8095' : '#38b6db';
+      muteBtn.blur(); // v1.4: 防止焦点滞留导致 ENTER 误触发
     });
 
     // ============================================================
@@ -1709,10 +1733,20 @@
     function drawBeams() {
       for (const b of beams) {
         const c = b.color || C.cyan;
-        rect(b.x - 54, b.y - 3, 54, 6, c);
-        rect(b.x - 54, b.y - 1, 54, 2, C.white);
-        rect(b.x, b.y - 5, 5, 10, C.white);
-        text(b.t, b.x - 28, b.y + 4, c === C.cyan ? C.cyanLt : c, 11, 'center');
+        if (currentChapter === 1) {
+          // v1.4: Ch1 子弹改为大色块（类似 Ch2 真洞察的清晰可读视觉）
+          const blockW = 100, blockH = 16;
+          const bx = b.x - blockW + 5;
+          rect(bx, b.y - blockH / 2, blockW, blockH, c);
+          rect(bx, b.y - blockH / 2, blockW, 2, C.white);          // 顶部高光
+          rect(b.x, b.y - blockH / 2 - 2, 5, blockH + 4, C.white); // 前端尖头
+          text(b.t, bx + blockW / 2, b.y + 3, C.bgDeep, 8, 'center');
+        } else {
+          rect(b.x - 54, b.y - 3, 54, 6, c);
+          rect(b.x - 54, b.y - 1, 54, 2, C.white);
+          rect(b.x, b.y - 5, 5, 10, C.white);
+          text(b.t, b.x - 28, b.y + 4, c === C.cyan ? C.cyanLt : c, 11, 'center');
+        }
       }
     }
 
@@ -1856,13 +1890,20 @@
     function fireRetort(slot) {
       if (currentChapter === 3) return; // CH3 使用格挡逻辑，不发射反问
 
-      // v1.4: 第一关 —— 单键发射 + 固定文案，零复杂度
+      // v1.4: 第一关 —— 单键发射 + 多版反问文案
       if (currentChapter === 1) {
         if (retortCD[0] > 0) return;
+        const CH1_RETORTS = [
+          'brief 想清楚了么？',
+          '批预算了么？',
+          '核心用户到底是谁？',
+          '到底要解决什么问题？',
+        ];
         beams.push({
           x: player.x + 6, y: player.y - 16,
-          vx: 3, t: 'brief 想清楚了么？',
-          dmg: 24, life: 180,
+          // v1.4: 速度从 3 降到 1.6（boss 快弹是 1.2，玩家子弹只略快一点，保证文字看得清）
+          vx: 1.6, t: CH1_RETORTS[Math.floor(Math.random() * CH1_RETORTS.length)],
+          dmg: 24, life: 300,
           color: C.cyan,
         });
         retortCD[0] = 25; // 极短冷却（约 0.4 秒）
@@ -2596,15 +2637,12 @@
       text('一个策略人的觉醒与自我进化', W / 2, 128, C.bossEye, 11, 'center');
 
       if (Math.floor(stateTimer / 30) % 2 === 0) {
-        text('▼ ENTER / 空格 / 点击 开始 ▼', W / 2, 170, C.white, 12, 'center');
+        text('▼ 按 ENTER 或 点击 开始 ▼', W / 2, 170, C.white, 12, 'center');
       }
-      if (!firstInteractionDone) {
-        text('（点击或按任意键启动音乐）', W / 2, 190, C.dim, 8, 'center');
-      }
-      text('A/D 移动     空格 跳跃     1/2/3 行动', W / 2, 230, C.dim, 9, 'center');
 
       // v0.8: 取消选关 —— TITLE → PROLOGUE（首玩）或直接 CH1 INTRO
-      if (justPressed['enter'] || justPressed[' ']) {
+      // v1.4: 仅 ENTER（避免与战斗中的空格=发射冲突）
+      if (justPressed['enter']) {
         if (!prologueShown) {
           state = S.PROLOGUE;
         } else {
@@ -2647,19 +2685,20 @@
         text('— PROLOGUE · 序章 —', W / 2, 32, C.gold, 11, 'center');
         const fade = Math.min(1, stateTimer / 30);
         ctx.globalAlpha = fade;
-        text('2026 年。品牌行业正在静默崩塌。', W / 2, 80, C.text, 11, 'center');
-        text('AI 一夜之间学会了所有的"创意套路"。', W / 2, 106, C.text, 11, 'center');
-        text('客户开始用 ChatGPT 写自己的 Brief。', W / 2, 132, C.text, 11, 'center');
+        text('2026 年，品牌行业似乎在默默崩塌……', W / 2, 78, C.text, 10, 'center');
+        text('AI 一夜之间以假乱真，似乎替代了"创意人"……', W / 2, 102, C.text, 10, 'center');
+        text('而客户，也开始用 ChatGPT "赋能生意"……', W / 2, 126, C.text, 10, 'center');
 
         if (stateTimer > 60) {
           const f2 = Math.min(1, (stateTimer - 60) / 30);
           ctx.globalAlpha = f2;
-          text('而你，还在凌晨 3 点改稿。', W / 2, 172, C.bossEye, 13, 'center');
+          text('而你，品牌策略人，', W / 2, 168, C.bossEye, 11, 'center');
+          text('看了看自己的发际线，继续改方案……', W / 2, 190, C.bossEye, 11, 'center');
         }
         ctx.globalAlpha = 1;
 
         if (stateTimer > 90 && Math.floor(stateTimer / 28) % 2 === 0) {
-          text('▼ ENTER / 点击 / 空格 继续 ▼', W / 2, 238, C.white, 10, 'center');
+          text('▼ 按 ENTER 继续 ▼', W / 2, 238, C.white, 10, 'center');
         }
       } else {
         // ===== 第二页：血量 + 键盘操作 =====
@@ -2696,7 +2735,7 @@
         const spX = 158, spW = 104;
         drawKeyCap(spX, 150, spW, 16, '空 格 / SPACE', 9);
         text('空 格 键', spX + spW / 2, 184, C.cyan, 9, 'center');
-        text('发 射 反 问', spX + spW / 2, 198, C.text, 8, 'center');
+        text('发 射 子 弹', spX + spW / 2, 198, C.text, 8, 'center');
 
         // —— 1 / 2 / 3 ——
         const numStartX = 305;
@@ -2711,8 +2750,8 @@
         }
       }
 
-      // ENTER / 空格 / 点击：翻页或进入第一章
-      if (stateTimer > 5 && (justPressed['enter'] || justPressed[' '])) {
+      // v1.4: 仅 ENTER（统一菜单确认键）
+      if (stateTimer > 5 && justPressed['enter']) {
         if (prologuePage === 0) {
           prologuePage = 1;
           stateTimer = 0;
@@ -2900,10 +2939,31 @@
       else if (currentChapter === 3) drawIntroCh3();
       else if (currentChapter === 4) drawIntroCh4();
       if (Math.floor(stateTimer / 30) % 2 === 0) {
-        text('▶ ENTER 继续 →', W - 30, 252, C.yellow, 10, 'right');
+        text('▶ ENTER 开始战斗 →', W - 30, 252, C.yellow, 10, 'right');
       }
-      if (stateTimer > 5 && (justPressed['enter'] || justPressed[' '])) {
-        state = S.READY; stateTimer = 0;
+      // v1.4: 删除"本关目标"页 —— INTRO 直接进入 FIGHT + 触发教学
+      if (stateTimer > 5 && justPressed['enter']) {
+        state = S.FIGHT; stateTimer = 0;
+        if (currentChapter !== 3) refillRetorts();
+        // 首次进入 Ch1 战斗 → 触发互动教学
+        if (currentChapter === 1 && !ch1Tutorial.doneOnce) {
+          ch1Tutorial.active = true;
+          ch1Tutorial.step = 0;
+          ch1Tutorial.fadeOut = 0;
+        }
+        // Ch2 / Ch3 首次进战斗 → 触发互动教学（Ch4 不教学）
+        if (currentChapter === 2 && !ch2Tutorial.doneOnce) {
+          ch2Tutorial.active = true;
+          ch2Tutorial.step = 0;
+          ch2Tutorial.spawnedAtStep = -1;
+          ch2Tutorial.fadeOut = 0;
+        }
+        if (currentChapter === 3 && !ch3Tutorial.doneOnce) {
+          ch3Tutorial.active = true;
+          ch3Tutorial.step = 0;
+          ch3Tutorial.spawnedAtStep = -1;
+          ch3Tutorial.fadeOut = 0;
+        }
       }
     }
 
@@ -2985,7 +3045,7 @@
         text('▶  ENTER  开始战斗', W / 2, H - 19, themeColor, 12, 'center');
       }
 
-      if (stateTimer > 5 && (justPressed['enter'] || justPressed[' '])) {
+      if (stateTimer > 5 && justPressed['enter']) {
         state = S.FIGHT; stateTimer = 0;
         if (currentChapter !== 3) refillRetorts();
         // v1.4: 首次进入 Ch1 战斗 → 触发互动教学
@@ -2994,11 +3054,107 @@
           ch1Tutorial.step = 0;
           ch1Tutorial.fadeOut = 0;
         }
+        // Ch2 / Ch3 首次进战斗 → 触发互动教学（Ch4 不教学）
+        if (currentChapter === 2 && !ch2Tutorial.doneOnce) {
+          ch2Tutorial.active = true;
+          ch2Tutorial.step = 0;
+          ch2Tutorial.spawnedAtStep = -1;
+          ch2Tutorial.fadeOut = 0;
+        }
+        if (currentChapter === 3 && !ch3Tutorial.doneOnce) {
+          ch3Tutorial.active = true;
+          ch3Tutorial.step = 0;
+          ch3Tutorial.spawnedAtStep = -1;
+          ch3Tutorial.fadeOut = 0;
+        }
       }
     }
 
     // ============================================================
     function updateFight() {
+      // v1.4: Ch2 互动教学 —— 在真实游戏里分步引导（不冻结场景，但 boss 不自动喷洞察/陷阱）
+      if (currentChapter === 2 && ch2Tutorial.active) {
+        updatePlayer();
+        updateWords();
+        // 注：Ch2 不能给 iframes（否则真洞察的"碰到 = 接住"逻辑也会被屏蔽）
+        if (stateTimer > 60) {
+          // 各步骤的"剧本式"实体投放
+          if (ch2Tutorial.step === 0 && ch2Tutorial.spawnedAtStep !== 0) {
+            // 在 player 上方落下一颗慢速真洞察
+            spawnWord(player.x, -30, 0, 0.45, 'truth', '消费者其实不知道自己要什么');
+            ch2Tutorial.spawnedAtStep = 0;
+          }
+          if (ch2Tutorial.step === 1 && ch2Tutorial.spawnedAtStep !== 1) {
+            // 落下一颗慢速陷阱
+            spawnWord(player.x + 60, -30, 0, 1.1, 'trap', '"颗粒度更高"');
+            ch2Tutorial.spawnedAtStep = 1;
+          }
+          // 进度推进：检测 words 数组里对应类型的词条是否消失（被接到 或 落出屏幕）
+          const hasTruth = words.some(w => w.type === 'truth');
+          const hasTrap = words.some(w => w.type === 'trap');
+          if (ch2Tutorial.step === 0 && ch2Tutorial.spawnedAtStep === 0 && !hasTruth) {
+            ch2Tutorial.step = 1;
+          } else if (ch2Tutorial.step === 1 && ch2Tutorial.spawnedAtStep === 1 && !hasTrap) {
+            ch2Tutorial.step = 2;
+            ch2Tutorial.fadeOut = 90;
+          } else if (ch2Tutorial.step === 2) {
+            ch2Tutorial.fadeOut--;
+            if (ch2Tutorial.fadeOut <= 0) {
+              ch2Tutorial.active = false;
+              ch2Tutorial.doneOnce = true;
+              player.iframes = 0;
+            }
+          }
+        }
+        // 也跑 boss 的 wobble/move 动画但不让它发射
+        const b = boss;
+        if (b.alive) {
+          b.wobble = (b.wobble || 0) + 0.04;
+          b.y = b.baseY + Math.sin(b.wobble * 0.7) * 4;
+        }
+        updateBeams();
+        updateParticles();
+        return;
+      }
+      // v1.4: Ch3 互动教学 —— 三种颜色音符各放一颗慢速练习
+      if (currentChapter === 3 && ch3Tutorial.active) {
+        updatePlayer();
+        updateCh3Rhythm();
+        // 教学期间玩家无敌
+        player.iframes = Math.max(player.iframes, 3);
+        if (stateTimer > 60) {
+          // step 0/1/2：每步放一颗对应颜色的慢速音符
+          if (ch3Tutorial.step < 3 && ch3Tutorial.spawnedAtStep !== ch3Tutorial.step) {
+            ch3Notes.push({
+              x: W + 40,
+              slot: ch3Tutorial.step,
+              text: '套话',
+              speed: -1.4, // 慢速教学
+              hit: false,
+            });
+            ch3Tutorial.spawnedAtStep = ch3Tutorial.step;
+            beep(330 + ch3Tutorial.step * 110, 0.06, 'sine', 0.03);
+          }
+          // 检测当前音符是否离开（被击中或飞过）
+          if (ch3Tutorial.spawnedAtStep === ch3Tutorial.step && ch3Notes.length === 0) {
+            ch3Tutorial.step++;
+            if (ch3Tutorial.step >= 3) {
+              ch3Tutorial.fadeOut = 90;
+            }
+          }
+          if (ch3Tutorial.step >= 3) {
+            ch3Tutorial.fadeOut--;
+            if (ch3Tutorial.fadeOut <= 0) {
+              ch3Tutorial.active = false;
+              ch3Tutorial.doneOnce = true;
+              player.iframes = 0;
+            }
+          }
+        }
+        updateBeams();
+        updateParticles();
+        return;
+      }
       // v1.4: Ch1 互动教学 —— 冻结 boss/词条，监听玩家"跳"和"反问"
       if (currentChapter === 1 && ch1Tutorial.active) {
         updatePlayer();
@@ -3111,6 +3267,42 @@
         ctx.globalAlpha = 1;
       }
 
+      // v1.4: Ch2 互动教学浮窗 —— 跟着步骤切换的小卡片
+      if (currentChapter === 2 && ch2Tutorial.active && stateTimer > 30) {
+        const pulse = 0.75 + Math.sin(stateTimer * 0.18) * 0.25;
+        let fadeMul = 1;
+        if (ch2Tutorial.step === 2) fadeMul = Math.max(0, ch2Tutorial.fadeOut / 90);
+        ctx.globalAlpha = pulse * fadeMul;
+        rect(W / 2 - 170, 64, 340, 36, C.bgDeep);
+        drawBoxBorder(W / 2 - 170, 64, 340, 36, C.yellow);
+        if (ch2Tutorial.step === 0) {
+          text('① 走过去 → 接住 绿色"真洞察"', W / 2, 84, C.green, 12, 'center');
+        } else if (ch2Tutorial.step === 1) {
+          text('② 跳起来 / 跑开 → 躲红色"陷阱"', W / 2, 84, '#ff6464', 12, 'center');
+        } else {
+          text('✓ ✓  开始真正的关卡！', W / 2, 84, C.yellow, 12, 'center');
+        }
+        ctx.globalAlpha = 1;
+      }
+      // v1.4: Ch3 互动教学浮窗
+      if (currentChapter === 3 && ch3Tutorial.active && stateTimer > 30) {
+        const pulse = 0.75 + Math.sin(stateTimer * 0.18) * 0.25;
+        let fadeMul = 1;
+        if (ch3Tutorial.step >= 3) fadeMul = Math.max(0, ch3Tutorial.fadeOut / 90);
+        ctx.globalAlpha = pulse * fadeMul;
+        rect(W / 2 - 170, 64, 340, 36, C.bgDeep);
+        drawBoxBorder(W / 2 - 170, 64, 340, 36, C.yellow);
+        if (ch3Tutorial.step === 0) {
+          text('① 蓝 色 词 条 飞 来 时 → 按 1', W / 2, 84, '#38b6db', 12, 'center');
+        } else if (ch3Tutorial.step === 1) {
+          text('② 粉 色 词 条 飞 来 时 → 按 2', W / 2, 84, C.glitchPink, 12, 'center');
+        } else if (ch3Tutorial.step === 2) {
+          text('③ 绿 色 词 条 飞 来 时 → 按 3', W / 2, 84, '#7be88f', 12, 'center');
+        } else {
+          text('✓ ✓ ✓  开始真正的关卡！', W / 2, 84, C.yellow, 12, 'center');
+        }
+        ctx.globalAlpha = 1;
+      }
       // v1.4: Ch1 互动教学覆盖层
       if (currentChapter === 1 && ch1Tutorial.active && stateTimer > 30) {
         const pulse = 0.75 + Math.sin(stateTimer * 0.18) * 0.25;
@@ -3255,30 +3447,20 @@
       text('★ V I C T O R Y ★', W / 2, 26, C.yellow, 22, 'center');
       text(`${info.name} 已被你击溃`, W / 2, 44, C.cyan, 10, 'center');
 
-      const cardX = 36, cardY = 56, cardW = W - 72, cardH = 144;
+      // v1.4: 简化卡片 —— 只保留"你看穿了什么"这一套表达
+      const cardX = 36, cardY = 70, cardW = W - 72, cardH = 110;
       rect(cardX, cardY, cardW, cardH, C.bgMid);
       drawBoxBorder(cardX, cardY, cardW, cardH, C.gold);
       drawBoxBorder(cardX - 2, cardY - 2, cardW + 4, cardH + 4, C.gold);
 
-      text('▌▌  解锁全新技能  ▌▌',
-        W / 2, cardY + 14, C.gold, 9, 'center');
-      text(`【 ${info.technique} 】`, W / 2, cardY + 40, C.yellow, 16, 'center');
-      rect(cardX + 30, cardY + 54, cardW - 60, 1, C.darker);
-      text(info.quote, W / 2, cardY + 70, C.text, 10, 'center');
+      text('—  你 看 穿 了 什 么  —',
+        W / 2, cardY + 22, C.cyan, 9, 'center');
+      text(`「 ${info.insightTitle} 」`, W / 2, cardY + 56, C.yellow, 20, 'center');
+      text(info.insightBody, W / 2, cardY + 88, C.cyanLt, 11, 'center');
 
-      // —— 你看穿了什么（B 建议：把抽象属性换成 假 X 方法论翻译）
-      text('— 你 看 穿 了 什 么 —',
-        W / 2, cardY + 88, C.cyan, 8, 'center');
-      text(`「 ${info.insightTitle} 」`, W / 2, cardY + 108, C.yellow, 13, 'center');
-      text(info.insightBody, W / 2, cardY + 128, C.cyanLt, 10, 'center');
-
-      text(`「${info.closer}」`, W / 2, 224, C.cyanLt, 9, 'center');
-      if (Math.floor(stateTimer / 60) % 2 === 0) {
-        // UI uses DOM buttons styled via CSS for Win state, no canvas text needed here
-      }
-      if (justPressed['c']) shareWin();
-      if (justPressed['r']) reset();
-      if (justPressed['n']) goToNextChapter();
+      text(`「${info.closer}」`, W / 2, 218, C.cyanLt, 10, 'center');
+      // v1.4: 统一 ENTER 主操作 = 下一章（与 DOM 按钮一致）
+      if (justPressed['enter']) btnNext.click();
     }
 
     // ============================================================
@@ -3330,9 +3512,10 @@
       text(q2, W / 2, 172, C.dim, 9, 'center');
       text('—— 欢迎来到无尽的莫比乌斯环 ——', W / 2, 190, C.dim, 8, 'center');
       if (Math.floor(stateTimer / 30) % 2 === 0) {
-        text('▼ 按下方按钮重新挑战 ▼', W / 2, 222, C.cyan, 10, 'center');
+        text('▼ ENTER 或 点击下方"再战"按钮 ▼', W / 2, 222, C.cyan, 10, 'center');
       }
-      if (justPressed['r']) reset();
+      // v1.4: ENTER = 再战（与 DOM 按钮一致）
+      if (justPressed['enter']) btnLoseRestart.click();
     }
 
     // ============================================================
@@ -3408,30 +3591,28 @@
       // === 星球大战式爬行文字 ===
       // 定义叙事文本块（每行 = {text, color, size, gap}）
       const crawlLines = [
-        { t: '你跨过了「第一章 · 模糊 Brief」，解锁了「反问之刃」——', c: C.yellow, s: 12 },
+        { t: '你跨过了「第一章 · 模糊 Brief」——', c: C.yellow, s: 12 },
         { t: '你识破了「假 · 清晰」。', c: C.cyanLt, s: 12 },
         { t: '未经质疑的 brief，不值得做。', c: C.text, s: 11 },
         { t: '', c: C.dim, s: 8 },
-        { t: '你跨过了「第二章 · 虚假 Insight」，解锁了「清醒之眼」——', c: C.yellow, s: 12 },
+        { t: '你跨过了「第二章 · 虚假 Insight」——', c: C.yellow, s: 12 },
         { t: '你识破了「假 · 洞察」。', c: C.cyanLt, s: 12 },
         { t: '不到一线，永远不知道消费者真实在想什么。', c: C.text, s: 11 },
         { t: '', c: C.dim, s: 8 },
-        { t: '你跨过了「第三章 · AI 魔王」，解锁了「实践真知」——', c: C.yellow, s: 12 },
+        { t: '你跨过了「第三章 · AI 魔王」——', c: C.yellow, s: 12 },
         { t: '你识破了「假 · 交付」。', c: C.cyanLt, s: 12 },
         { t: 'Token 不要钱，似是而非的废话被当作"解决方案"。', c: C.text, s: 11 },
         { t: '', c: C.dim, s: 8 },
-        { t: '你跨过了「第四章 · ROI 暴君」，解锁了「平衡之道」——', c: C.yellow, s: 12 },
+        { t: '你跨过了「第四章 · ROI 暴君」——', c: C.yellow, s: 12 },
         { t: '你识破了「假 · 确定」。', c: C.cyanLt, s: 12 },
         { t: '短期增长是确定的，但牺牲了长期可能性。', c: C.text, s: 11 },
         { t: '', c: C.dim, s: 8 },
         { t: '—————————————————', c: C.darker, s: 10 },
         { t: '', c: C.dim, s: 6 },
-        { t: '四把武器，一种姿态：', c: C.text, s: 12 },
+        { t: '四次看穿，一种姿态：', c: C.text, s: 12 },
         { t: '看穿假象，回到真实。', c: C.cyanLt, s: 13 },
         { t: '', c: C.dim, s: 6 },
         { t: '世界变化很快，策略人始终成长。', c: C.gold, s: 14 },
-        { t: '', c: C.dim, s: 6 },
-        { t: `第一章·反问之刃   第二章·清醒之眼   第三章·实践真知   第四章·平衡之道`, c: C.dim, s: 10 },
       ];
 
       // 计算爬行参数
@@ -3443,9 +3624,15 @@
       const crawlStartY = H + 20;
       const crawlDone = crawlOffset > totalH + 40;
 
-      // 按键跳过字幕滚动（在渲染前判断）
-      if (!finaleSkipped && (justPressed['enter'] || justPressed[' '])) {
-        finaleSkipped = true;
+      // v1.4: 统一 ENTER 行为
+      //   - 字幕滚动中：ENTER = 跳过
+      //   - 最终画面：ENTER = 重新开始游戏
+      if (justPressed['enter']) {
+        if (!finaleSkipped && !crawlDone) {
+          finaleSkipped = true;
+        } else {
+          location.reload();
+        }
       }
 
       // ---- 分支：字幕滚动 vs 最终画面 ----
@@ -3522,7 +3709,7 @@
 
         // 跳过提示（更清晰：白色 + 更大字号）
         if (stateTimer > 60) {
-          text('▼ 按 ENTER 或 空格 跳过字幕 ▼', W / 2, H - 12, C.text, 9, 'center');
+          text('▼ 按 ENTER 跳过字幕 ▼', W / 2, H - 12, C.text, 9, 'center');
         }
       }
     }
@@ -3569,10 +3756,9 @@
     async function shareWin() {
       const info = CHAPTER_INFO[currentChapter];
       const txt =
-        `我在《品牌策略人启示录》第 ${currentChapter} 章击溃了「${info.name}」。\n` +
-        `头发剩余 ${player.hp}/${player.maxHp}，被命中 ${player.totalHitsTaken} 次。\n` +
-        `解锁技能：${info.technique}\n\n` +
-        `${info.quote}\n${info.closer}\n\n` +
+        `我在《品牌策略人启示录》第 ${currentChapter} 章击溃了「${info.name}」。\n\n` +
+        `我看穿了「${info.insightTitle}」——\n${info.insightBody}\n\n` +
+        `${info.closer}\n\n` +
         `#策略人启示录`;
       await doShare(txt);
     }
@@ -3635,24 +3821,28 @@
 
 
 
-    btnNext.addEventListener('click', goToNextChapter);
-    btnRestart.addEventListener('click', () => {
+    // v1.4: 所有覆盖层按钮点击后立即失焦，避免 ENTER 误触发
+    btnNext.addEventListener('click', (e) => { goToNextChapter(); e.currentTarget.blur(); });
+    btnRestart.addEventListener('click', (e) => {
       hideButtons();
       resetCombatEntities();
       state = S.INTRO;
       stateTimer = 0;
+      e.currentTarget.blur();
     });
-    btnLoseRestart.addEventListener('click', () => {
+    btnLoseRestart.addEventListener('click', (e) => {
       hideButtons();
       resetCombatEntities();
       state = S.INTRO;
       stateTimer = 0;
       startBGM('ch' + currentChapter);
+      e.currentTarget.blur();
     });
-    btnLoseSelect.addEventListener('click', () => {
+    btnLoseSelect.addEventListener('click', (e) => {
       // v0.8: 取消选关 → 返回标题
       hideButtons();
       reset();
+      e.currentTarget.blur();
     });
     btnFinaleRestart.addEventListener('click', () => location.reload());
     backBtn.addEventListener('click', () => {
@@ -3720,10 +3910,12 @@
       prologueShown = false;
       prologuePage = 0;
       ch1Tutorial = { active: false, step: 0, fadeOut: 0, doneOnce: false };
+      ch2Tutorial = { active: false, step: 0, spawnedAtStep: -1, fadeOut: 0, doneOnce: false };
+      ch3Tutorial = { active: false, step: 0, spawnedAtStep: -1, fadeOut: 0, doneOnce: false };
       hideButtons();
       state = S.TITLE;
       stateTimer = 0;
-      if (firstInteractionDone) startBGM('title');
+      if (bgmStarted) startBGM('title');
     }
 
     // ============================================================
@@ -3742,7 +3934,7 @@
       const showBack = (state === S.INTRO || state === S.READY || state === S.FIGHT) && !boss.deathTimer;
       backBtn.style.display = showBack ? 'block' : 'none';
       pauseBtn.style.display = (state === S.FIGHT && boss.alive) ? 'block' : 'none';
-      if (state !== S.FIGHT) { paused = false; pauseBtn.textContent = '⏸ 暂停'; pauseBtn.style.color = '#ffec27'; pauseBtn.style.borderColor = '#ffec27'; }
+      if (state !== S.FIGHT) { paused = false; pauseBtn.textContent = '⏸ 按 P 暂停'; pauseBtn.style.color = '#ffec27'; pauseBtn.style.borderColor = '#ffec27'; }
 
       let shaking = false;
       if (shakeAmt > 0) {
