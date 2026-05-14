@@ -3927,7 +3927,7 @@
 
       // 全局：根据状态切 BGM
       if (state === S.TITLE || state === S.PROLOGUE || state === S.CHAPTER_SELECT) {
-        if (firstInteractionDone && bgmCurrentId !== 'title') startBGM('title');
+        if (bgmStarted && bgmCurrentId !== 'title') startBGM('title');
       }
 
       // 显示返回按钮
