@@ -541,8 +541,8 @@
         technique: '平衡之道',
         techniqueEn: 'THE ART OF BALANCE',
         training: '理解长期，走向平衡',
-        insightTitle: '假 · 确 定',
-        insightBody: '短期增长是确定的，但牺牲了长期可能性。',
+        insightTitle: '假 · 增 长',
+        insightBody: '可持续增长，源于对品类和时机的深刻洞察。',
         quote: '没有效果养不活当下，没有品牌等不到明天。',
         closer: '品牌和增长从不对立，你终于找到了那个平衡点。',
       },
@@ -720,36 +720,65 @@
 
     // 3 道核心选择题：每题都设计成 A=偏品牌 / B=平衡（最佳）/ C=偏 ROI
     // 通过题目体现"既要 ROI，又不能唯 ROI"
-    const CH4_QUESTIONS = [
+    // v1.4: 第四关题库（6 题，每局随机抽 3）。correct:true 为正解，错误项带 fb 反馈。
+    const CH4_QUESTION_POOL = [
       {
-        q: 'CFO 要砍掉所有品牌投放预算',
+        q: 'ROI 暴君拍桌："明年预算全压老客复购！拉新太贵，留老客 ROI 最高！"',
         opts: [
-          { t: '砍 30% 转效果广告，留住核心心智渗透', type: 'b' },
-          { t: '拒绝任何调整，品牌一分钱都不能动', type: 'a' },
-          { t: '全砍掉，本季度先把转化率拉起来', type: 'c' }
+          { t: '增长主要靠拉新；只守着老客，池子会越来越小', correct: true },
+          { t: '对，复购 ROI 最高，预算全投老客', fb: '你只是在补贴本来就会买的人，品牌不会长大。' },
+          { t: '老客、新客预算对半分', fb: '和稀泥不是策略 —— 增长的发动机是拉新。' },
         ],
-        explain: '没有效果养不活当下，没有品牌等不到明天 —— 平衡才是答案。',
+        explain: '品牌增长，几乎全靠"更多人买第一次"。忠诚度是结果，不是发动机。',
       },
       {
-        q: '直播间 ROI=2，品牌广告 ROI=0.5，钱该投哪？',
+        q: 'ROI 暴君怒吼："砍掉服务大众的预算！只伺候那 5% 买最多的超级用户！"',
         opts: [
-          { t: '只投品牌，眼前的转化都是泡沫', type: 'a' },
-          { t: '都投。直播是当下血液，品牌是未来骨架', type: 'b' },
-          { t: '只投直播间，能立刻看到回报的才有意义', type: 'c' }
+          { t: '不行；品牌大半销量来自大量偶尔买一次的人，丢了就萎缩', correct: true },
+          { t: '对，超级用户贡献最大，资源全集中', fb: '"超级用户贡献最大"是统计幻觉 —— 他们人数太少。' },
+          { t: '超级用户和大众都顾一点', fb: '重心错了 —— 大众轻度买家才是销量的大头。' },
         ],
-        explain: '短期看流量，长期看心智 —— 两条腿走路才走得远。',
+        explain: '一年买一两次的轻度买家人数极多，加起来才是销量主力。只服务超级用户=慢性自杀。',
       },
       {
-        q: 'CEO 问：明年品牌：效果该怎么分？',
+        q: 'ROI 暴君逼问："说不出一个独一无二的差异化卖点，品牌预算一分不批！"',
         opts: [
-          { t: '全做品牌，故事还没讲完', type: 'a' },
-          { t: '全做效果，董事会要看的是 GMV', type: 'c' },
-          { t: '看品类阶段。新品 4:6 偏效果，成熟品 6:4 偏品牌', type: 'b' }
+          { t: '消费者其实分不清差在哪；该投"独特性资产"，让人一眼认出你', correct: true },
+          { t: '好，挤破头也要想个独一无二的卖点', fb: '多数消费者根本感知不到"差异化" —— 这是自我感动。' },
+          { t: '差异化卖点和独特性资产都做', fb: '预算有限 —— 先保证"被记住"，比"被觉得不同"更要紧。' },
         ],
-        explain: '不看品类阶段谈预算比例，都是耍流氓。',
-      }
+        explain: '让人"认得出 + 想得起"，比让人"觉得你不同"重要得多。',
+      },
+      {
+        q: 'ROI 暴君大喜："促销的 ROI 最漂亮！明年预算全砸促销！"',
+        opts: [
+          { t: '促销只换来短期销量脉冲，还会把心理价格越压越低', correct: true },
+          { t: '对，ROI 高就是硬道理，全砸促销', fb: '促销的 ROI 是借来的 —— 借未来的价格认知。' },
+          { t: '促销和品牌建设交替着做', fb: '常态化促销已在拆你的定价权，交替也救不回。' },
+        ],
+        explain: '促销主要补贴了本来就会买的人，不留品牌资产。常态化促销=亲手拆掉定价权。',
+      },
+      {
+        q: 'ROI 暴君冷笑："你天天说品牌品牌 —— 它到底值几个钱？给我个数字！"',
+        opts: [
+          { t: '看它能不能涨价、还不丢客人 —— 定价权就是品牌的钱', correct: true },
+          { t: '看 GMV 和增速，规模就是价值', fb: '规模大不等于值钱 —— 不赚钱的规模是负担。' },
+          { t: '看广告砸了多少、声量有多大', fb: '声量是花出去的钱，不是品牌的价值。' },
+        ],
+        explain: '能涨价、还不丢客人 —— 这就是品牌的护城河。规模和声量都不是。',
+      },
+      {
+        q: 'ROI 暴君下令："明年所有渠道、所有人群、所有价格带，全都做到第一！"',
+        opts: [
+          { t: '战略就是"选择"——选准在哪打、怎么赢，其他果断放弃', correct: true },
+          { t: '对，全都做，不给对手留任何空隙', fb: '资源永远有限 —— "全都要"=每个都做不透。' },
+          { t: '全都做，但每个都少投一点', fb: '雨露均沾=没有重点=平庸。' },
+        ],
+        explain: '不做选择的战略，不是战略。资源有限，"全都要"是自杀式平庸。',
+      },
     ];
     const CH4_TOTAL_Q = 3;
+    let ch4Questions = [];   // 本局随机抽出的 3 题
 
     // === CH3 数据（AI 模板魔王） ===
     const TRUTH_PHRASES = [
@@ -817,7 +846,8 @@
     let ch4Q = null;          // 当前题目 {idx, q, a, b, c, picked, explainB, showResult, resultTimer}
     let ch4QIdx = 0;          // 已答题数（0..CH4_TOTAL_Q）
     let ch4NextQTimer = 240;  // 下次出题倒计时
-    let ch4Picks = [];        // 记录每题选项 'a'/'b'/'c'
+    let ch4Picks = [];        // 记录每题是否答对（true/false）
+    let ch4BossSkill = null;  // v1.4: 出题前的暴君大招动画 {type,t}
     let finaleSkipped = false; // 结算页跳过标记
     let paused = false;
 
@@ -1395,6 +1425,17 @@
       const suitC = flash ? C.white : C.suitBlack;
       const tieC = flash ? C.cyanLt : C.dollarGold;
 
+      // v1.4: 大招特效变换（变大 / 旋转成龙卷风），以脚下为缩放原点
+      const fxS = b.fxScale || 1;
+      const fxSpin = b.fxSpinScale || 1;
+      const hasFx = (fxS !== 1 || fxSpin !== 1);
+      if (hasFx) {
+        ctx.save();
+        ctx.translate(px(b.x), GROUND_Y);
+        ctx.scale(fxSpin * fxS, fxS);
+        ctx.translate(-px(b.x), -GROUND_Y);
+      }
+
       ctx.fillStyle = 'rgba(0,0,0,0.5)';
       ctx.beginPath();
       ctx.ellipse(x, GROUND_Y + 2, 24, 3, 0, 0, Math.PI * 2);
@@ -1458,6 +1499,8 @@
         rect(x - 20, y - 50, 40, 50, C.white);
         ctx.globalAlpha = 1;
       }
+
+      if (hasFx) ctx.restore();
     }
 
     // ============================================================
@@ -2384,7 +2427,7 @@
     // ============================================================
     function spawnCh4Question() {
       if (ch4QIdx >= CH4_TOTAL_Q) return;
-      const q = CH4_QUESTIONS[ch4QIdx];
+      const q = ch4Questions[ch4QIdx];
       const opts = [...q.opts];
       // Fisher-Yates shuffle
       for (let i = opts.length - 1; i > 0; i--) {
@@ -2407,10 +2450,15 @@
 
     function updateCh4Question() {
       if (!ch4Q) {
+        // v1.4: 大招动画进行中 —— 播完才弹题
+        if (ch4BossSkill) {
+          updateCh4BossSkill();
+          return;
+        }
         // 题目间冷却时间。BOSS 正常攻击。
         ch4NextQTimer--;
         if (ch4NextQTimer <= 0 && ch4QIdx < CH4_TOTAL_Q) {
-          spawnCh4Question();
+          startCh4BossSkill();
         }
         return;
       }
@@ -2425,7 +2473,7 @@
           // 全部答完且还有 boss → 把 boss 打到 0
           if (ch4QIdx >= CH4_TOTAL_Q && boss.alive) {
             // 至少答对一题就触发胜利
-            const correctCount = ch4Picks.filter(p => p === 'b').length;
+            const correctCount = ch4Picks.filter(p => p === true).length;
             if (correctCount >= 1) {
               boss.hp = 0;
               onBossDefeated();
@@ -2442,46 +2490,144 @@
       else if (justPressed['3']) pickIdx = 2;
       if (pickIdx === -1) return;
 
-      const pickType = ch4Q.opts[pickIdx].type;
-      ch4Q.picked = pickType;
+      const pickedOpt = ch4Q.opts[pickIdx];
+      const isCorrect = !!pickedOpt.correct;
+      ch4Q.pickedCorrect = isCorrect;
+      ch4Q.pickedFb = pickedOpt.fb || '';
       ch4Q.showResult = true;
       ch4Q.resultTimer = 0;
-      ch4Picks.push(pickType);
+      ch4Picks.push(isCorrect);
 
       // 应用结果
-      if (pickType === 'b') {
-        // 平衡，最佳：boss 大伤 + 品牌+
+      if (isCorrect) {
+        // 答对：boss 大伤 + 品牌+
         boss.hp -= 70;
         boss.hitFlash = 12;
         brandEquity = Math.min(100, brandEquity + 12);
-        spawnFloat(boss.x, boss.y - 30, '-70 平衡之力', C.cyanLt);
+        spawnFloat(boss.x, boss.y - 30, '-70 一针见血', C.cyanLt);
         spawnFloat(player.x, player.y - 40, '+12 品牌', C.brandCyan);
         spawnParticles(boss.x, boss.y - 14, C.cyanLt, 24);
         shake(8);
         beep(990, 0.2, 'square', 0.07);
         setTimeout(() => beep(1320, 0.2, 'square', 0.06), 100);
-      } else if (pickType === 'a') {
-        // 偏品牌：伤害一般 + 品牌+ 但 boss 嘲笑你"不切实际"
-        boss.hp -= 22;
-        boss.hitFlash = 6;
-        brandEquity = Math.min(100, brandEquity + 4);
-        if (player.hp > 1) { player.hp--; player.totalHitsTaken++; }
-        spawnFloat(boss.x, boss.y - 30, '-22 偏理想', C.yellow);
-        spawnFloat(player.x, player.y - 40, '-1 头发（被嘲笑）', C.red);
-        shake(5);
-        beep(440, 0.15, 'sawtooth', 0.05);
       } else {
-        // 偏 ROI：伤害一般 + 品牌-
-        boss.hp -= 22;
+        // 答错：boss 小伤 + 品牌-
+        boss.hp -= 20;
         boss.hitFlash = 6;
-        brandEquity = Math.max(0, brandEquity - 18);
-        spawnFloat(boss.x, boss.y - 30, '-22 唯 ROI', C.yellow);
-        spawnFloat(player.x, player.y - 40, '-18 品牌', C.red);
+        brandEquity = Math.max(0, brandEquity - 16);
+        spawnFloat(boss.x, boss.y - 30, '-20', C.yellow);
+        spawnFloat(player.x, player.y - 40, '-16 品牌', C.red);
         shake(5);
         beep(220, 0.18, 'sawtooth', 0.06);
         if (brandEquity <= 0) { triggerLose('brand'); return; }
       }
       if (boss.hp <= 0 && boss.alive) onBossDefeated();
+    }
+
+    // ============================================================
+    //  v1.4: CH4 出题前的暴君"大招"动画（3 种随机）
+    // ============================================================
+    function startCh4BossSkill() {
+      ch4BossSkill = {
+        type: Math.floor(Math.random() * 2),  // 0=砸盘  1=焦虑风暴
+        t: 0,
+        targetX: player.x,                    // 砸盘落点 = 玩家当前位置
+        bossX0: boss.x,
+      };
+      words.length = 0; // 清掉飞行弹幕
+      beep(140, 0.2, 'sawtooth', 0.06);
+    }
+
+    function updateCh4BossSkill() {
+      const sk = ch4BossSkill;
+      const b = boss;
+      sk.t++;
+      b.wobble += 0.04;
+      if (b.hitFlash > 0) b.hitFlash--;
+
+      if (sk.type === 0) {
+        // ===== 砸盘：变大 + 跳到玩家头顶 + 砸下（不掉血）=====
+        if (sk.t < 40) {
+          const p = sk.t / 40;
+          b.fxScale = 1 + 0.7 * p;                          // 1 → 1.7 变大
+          b.y = b.baseY - 92 * Math.sin(p * Math.PI / 2);   // 升空
+          b.x = sk.bossX0 + (sk.targetX - sk.bossX0) * p;   // 横移到玩家上方
+        } else if (sk.t < 54) {
+          const p = (sk.t - 40) / 14;
+          b.fxScale = 1.7;
+          b.x = sk.targetX;
+          b.y = (b.baseY - 92) + 92 * (p * p);              // 加速砸下
+        } else {
+          b.x = sk.targetX;
+          b.y = b.baseY;
+          if (sk.t === 54) {
+            // 砸地冲击（不掉血，纯演出）
+            shake(20);
+            for (let i = 0; i < 32; i++) {
+              spawnParticles(sk.targetX - 56 + i * 3.5, GROUND_Y, C.dollarGold, 1);
+            }
+            spawnFloat(sk.targetX, GROUND_Y - 44, '砰！', C.red);
+            beep(65, 0.36, 'sawtooth', 0.1);
+          }
+          if (sk.t > 78) {  // 收尾缩回正常大小
+            const p = Math.min(1, (sk.t - 78) / 38);
+            b.fxScale = 1.7 - 0.7 * p;
+          }
+        }
+      } else {
+        // ===== 焦虑风暴：旋转成龙卷风 + 螺旋旋出粒子 =====
+        b.y = b.baseY - 12 - Math.sin(sk.t * 0.12) * 5;     // 微微浮起
+        b.fxSpinScale = 0.32 + 0.68 * Math.abs(Math.cos(sk.t * 0.42)); // 旋转挤压
+        b.fxScale = 1 + 0.12 * Math.sin(sk.t * 0.22);       // 轻微脉动
+        if (sk.t % 3 === 0) {
+          const ang = sk.t * 0.5;
+          const r = 12 + (sk.t % 38);
+          spawnParticles(b.x + Math.cos(ang) * r, b.baseY - 26 + Math.sin(ang) * r * 0.45,
+            Math.random() < 0.5 ? C.dollarGold : C.red, 2);
+        }
+        if (sk.t === 36) shake(6);
+        if (sk.t === 78) shake(9);
+        if (sk.t % 22 === 0) beep(170 + (sk.t % 90), 0.09, 'sawtooth', 0.05);
+      }
+
+      if (sk.t >= 120) {
+        b.fxScale = 1;
+        b.fxSpinScale = 1;
+        b.y = b.baseY;
+        ch4BossSkill = null;
+        spawnCh4Question();
+      }
+    }
+
+    function drawCh4BossSkill() {
+      if (!ch4BossSkill) return;
+      const sk = ch4BossSkill;
+      const b = boss;
+
+      // 焦虑风暴：在 boss 处叠一个半透明龙卷风漏斗
+      if (sk.type === 1) {
+        const cx = px(b.x);
+        ctx.globalAlpha = 0.28;
+        for (let i = 0; i < 7; i++) {
+          const w = 5 + i * 4.5;
+          const yy = GROUND_Y - i * 8;
+          const sway = Math.sin(sk.t * 0.3 + i * 0.6) * 5;
+          rect(cx - w / 2 + sway, yy - 7, w, 8, i % 2 ? C.dollarGold : '#7a5a22');
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      // 招式横幅
+      const names = ['砸  ·  盘', '增 长 焦 虑 风 暴'];
+      const appear = Math.min(1, sk.t / 14);
+      const fade = sk.t > 100 ? Math.max(0, 1 - (sk.t - 100) / 20) : 1;
+      ctx.globalAlpha = appear * fade;
+      rect(0, 64, W, 32, 'rgba(20, 10, 4, 0.86)');
+      rect(0, 64, W, 2, C.dollarGold);
+      rect(0, 94, W, 2, C.dollarGold);
+      text('◆  ROI 暴君 · 发动大招  ◆', W / 2, 76, C.red, 8, 'center');
+      text(names[sk.type], W / 2, 90, C.dollarGold, 13, 'center');
+      ctx.globalAlpha = 1;
     }
 
     function drawCh4Question() {
@@ -2499,32 +2645,27 @@
         W / 2, cardY + 14, C.dollarGold, 9, 'center');
 
       if (!ch4Q.showResult) {
-        // 题目
-        text(`Q：${ch4Q.q}`, W / 2, cardY + 38, C.white, 12, 'center');
-        rect(cardX + 30, cardY + 48, cardW - 60, 1, C.darker);
+        // 题目（字号 10，避免长句超出卡片）
+        text(ch4Q.q, W / 2, cardY + 40, C.white, 10, 'center');
+        rect(cardX + 30, cardY + 52, cardW - 60, 1, C.darker);
         // 三选项
-        text('[1] ' + ch4Q.opts[0].t, cardX + 16, cardY + 70, C.text, 9);
-        text('[2] ' + ch4Q.opts[1].t, cardX + 16, cardY + 92, C.text, 9);
-        text('[3] ' + ch4Q.opts[2].t, cardX + 16, cardY + 114, C.text, 9);
+        text('[1] ' + ch4Q.opts[0].t, cardX + 16, cardY + 74, C.text, 9);
+        text('[2] ' + ch4Q.opts[1].t, cardX + 16, cardY + 98, C.text, 9);
+        text('[3] ' + ch4Q.opts[2].t, cardX + 16, cardY + 122, C.text, 9);
         text('（按 1/2/3 选择）', W / 2, cardY + cardH - 10, C.dim, 8, 'center');
       } else {
         // 答案反馈
-        const pickLabel = ch4Q.picked === 'a' ? 'A · 偏品牌派'
-                       : ch4Q.picked === 'b' ? 'B · 平衡派'
-                       : 'C · 偏 ROI 派';
-        const pickColor = ch4Q.picked === 'b' ? C.green : C.yellow;
-        text(`你选了：${pickLabel}`, W / 2, cardY + 38, pickColor, 11, 'center');
-        rect(cardX + 30, cardY + 48, cardW - 60, 1, C.darker);
-
-        if (ch4Q.picked === 'b') {
-          text('★ 完美回答 ★', W / 2, cardY + 70, C.green, 12, 'center');
-        } else if (ch4Q.picked === 'a') {
-          text('× 太理想 — 公司活不到下季度', W / 2, cardY + 70, C.yellow, 10, 'center');
+        const correct = ch4Q.pickedCorrect;
+        text(correct ? '✓  答 对 了 !' : '✗  答 错 了',
+          W / 2, cardY + 40, correct ? C.green : C.red, 14, 'center');
+        rect(cardX + 30, cardY + 52, cardW - 60, 1, C.darker);
+        if (correct) {
+          text('漂亮 —— 你顶住了暴君。', W / 2, cardY + 74, C.green, 10, 'center');
         } else {
-          text('× 太短视 — 品牌资产正在流失', W / 2, cardY + 70, C.red, 10, 'center');
+          text(ch4Q.pickedFb, W / 2, cardY + 74, C.yellow, 9, 'center');
         }
-        text('正解：', cardX + 16, cardY + 92, C.cyan, 9);
-        text(ch4Q.explainB, cardX + 16, cardY + 106, C.cyanLt, 9);
+        text('正  解', W / 2, cardY + 100, C.cyan, 8, 'center');
+        text(ch4Q.explainB, W / 2, cardY + 116, C.cyanLt, 9, 'center');
         text('（即将进入下一题…）', W / 2, cardY + cardH - 10, C.dim, 8, 'center');
       }
     }
@@ -3129,7 +3270,7 @@
               x: W + 40,
               slot: ch3Tutorial.step,
               text: '套话',
-              speed: -1.4, // 慢速教学
+              speed: -2.8, // 教学速度（正式为 -3.5，只略慢一点点）
               hit: false,
             });
             ch3Tutorial.spawnedAtStep = ch3Tutorial.step;
@@ -3197,8 +3338,9 @@
         updateCh3Rhythm();
       } else if (currentChapter === 4) {
         // v0.8: 选择题。题目期间 boss 完全暂停；非答题阶段 boss 正常射击
+        // v1.4: 大招动画期间也暂停正常攻击
         updateCh4Question();
-        if (!ch4Q) {
+        if (!ch4Q && !ch4BossSkill) {
           updateBossCh4();
           updateWords();
         }
@@ -3241,6 +3383,7 @@
 
       if (currentChapter === 4) {
         drawHUDBrandBar();
+        drawCh4BossSkill();   // v1.4: 出题前的暴君大招横幅
         drawCh4Question();
         text(`决策进度 ${ch4QIdx}/${CH4_TOTAL_Q}`, W - 8, 32, C.dollarGold, 8, 'right');
       } else if (currentChapter === 3) {
@@ -3286,20 +3429,31 @@
       }
       // v1.4: Ch3 互动教学浮窗（2 步测试足够）
       if (currentChapter === 3 && ch3Tutorial.active && stateTimer > 30) {
+        // —— 高亮"判定圈"：让玩家明白"数字进圈才按键" ——
+        if (ch3Tutorial.step < 2) {
+          const hx = CH3_HIT_X, hy = CH3_TRACK_Y;
+          const pr = 22 + Math.sin(stateTimer * 0.28) * 6;
+          ctx.strokeStyle = C.yellow;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(hx, hy, pr, 0, Math.PI * 2);
+          ctx.stroke();
+          text('↑ 这 个 圈', hx + 24, hy + pr + 14, C.yellow, 9, 'center');
+        }
         const pulse = 0.75 + Math.sin(stateTimer * 0.18) * 0.25;
         let fadeMul = 1;
         if (ch3Tutorial.step >= 2) fadeMul = Math.max(0, ch3Tutorial.fadeOut / 90);
         ctx.globalAlpha = pulse * fadeMul;
-        rect(W / 2 - 180, 60, 360, 44, C.bgDeep);
-        drawBoxBorder(W / 2 - 180, 60, 360, 44, C.yellow);
+        rect(W / 2 - 190, 58, 380, 46, C.bgDeep);
+        drawBoxBorder(W / 2 - 190, 58, 380, 46, C.yellow);
         if (ch3Tutorial.step === 0) {
-          text('当数字飞到左侧圆圈区域时，按下对应数字', W / 2, 78, C.cyanLt, 10, 'center');
-          text('① 蓝色 1 来了 → 按 键盘 1', W / 2, 96, '#38b6db', 11, 'center');
+          text('数字滑进左边那个【发光圆圈】 → 立刻按对应数字', W / 2, 77, C.cyanLt, 9, 'center');
+          text('① 蓝色数字 1 进圈 → 按 键盘 1', W / 2, 96, '#38b6db', 11, 'center');
         } else if (ch3Tutorial.step === 1) {
-          text('当数字飞到左侧圆圈区域时，按下对应数字', W / 2, 78, C.cyanLt, 10, 'center');
-          text('② 粉色 2 来了 → 按 键盘 2', W / 2, 96, C.glitchPink, 11, 'center');
+          text('数字滑进左边那个【发光圆圈】 → 立刻按对应数字', W / 2, 77, C.cyanLt, 9, 'center');
+          text('② 粉色数字 2 进圈 → 按 键盘 2', W / 2, 96, C.glitchPink, 11, 'center');
         } else {
-          text('✓ ✓  开始真正的关卡！', W / 2, 86, C.yellow, 13, 'center');
+          text('✓ ✓  开始真正的关卡！', W / 2, 84, C.yellow, 13, 'center');
         }
         ctx.globalAlpha = 1;
       }
@@ -3489,28 +3643,21 @@
         q1 = '「系统提示：您的岗位已被自动化取代。」';
         q2 = '「原因：无法提供高于 AI 的情绪价值。」';
         qc = C.glitchPink;
-      } else if (currentChapter === 4) {
-        if (player.loseReason === 'brand') {
-          title = '长期品牌已被掏空';
-          sub = '你赢了这一季，输了下一年。';
-          q1 = '「CFO：早跟你说了 ROI 优先。」';
-          q2 = '「品牌资产：归零。」';
-        } else {
-          title = '你顶不住压力倒下了';
-          sub = '在会议室的声浪中妥协';
-          q1 = '「销售总监：这文案能带货吗？」';
-          q2 = '「CEO：那就都按销售的来吧。」';
-        }
-        qc = C.dollarGold;
       }
 
-      text(title, W / 2, 92, C.dim, 12, 'center');
-      text(sub, W / 2, 110, C.dim, 10, 'center');
-      rect(40, 130, W - 80, 70, C.bgMid);
-      rect(40, 130, W - 80, 2, C.redDeep);
-      text(q1, W / 2, 154, qc, 10, 'center');
-      text(q2, W / 2, 172, C.dim, 9, 'center');
-      text('—— 欢迎来到无尽的莫比乌斯环 ——', W / 2, 190, C.dim, 8, 'center');
+      if (currentChapter === 4) {
+        // v1.4: 第四关失败页只留一句话
+        text('品牌策略，并不是你想的那么简单。', W / 2, 122, C.dollarGold, 12, 'center');
+        text('再回去练练！', W / 2, 148, C.dollarGold, 12, 'center');
+      } else {
+        text(title, W / 2, 92, C.dim, 12, 'center');
+        text(sub, W / 2, 110, C.dim, 10, 'center');
+        rect(40, 130, W - 80, 70, C.bgMid);
+        rect(40, 130, W - 80, 2, C.redDeep);
+        text(q1, W / 2, 154, qc, 10, 'center');
+        text(q2, W / 2, 172, C.dim, 9, 'center');
+        text('—— 欢迎来到无尽的莫比乌斯环 ——', W / 2, 190, C.dim, 8, 'center');
+      }
       if (Math.floor(stateTimer / 30) % 2 === 0) {
         text('▼ ENTER 或 点击下方"再战"按钮 ▼', W / 2, 222, C.cyan, 10, 'center');
       }
@@ -3604,8 +3751,8 @@
         { t: 'Token 不要钱，似是而非的废话被当作"解决方案"。', c: C.text, s: 11 },
         { t: '', c: C.dim, s: 8 },
         { t: '你跨过了「第四章 · ROI 暴君」——', c: C.yellow, s: 12 },
-        { t: '你识破了「假 · 确定」。', c: C.cyanLt, s: 12 },
-        { t: '短期增长是确定的，但牺牲了长期可能性。', c: C.text, s: 11 },
+        { t: '你识破了「假 · 增长」。', c: C.cyanLt, s: 12 },
+        { t: '可持续增长，源于对品类和时机的深刻洞察。', c: C.text, s: 11 },
         { t: '', c: C.dim, s: 8 },
         { t: '—————————————————', c: C.darker, s: 10 },
         { t: '', c: C.dim, s: 6 },
@@ -3894,6 +4041,16 @@
       ch4QIdx = 0;
       ch4NextQTimer = 240;
       ch4Picks = [];
+      ch4BossSkill = null;
+      boss.fxScale = 1;
+      boss.fxSpinScale = 1;
+      // v1.4: 从 6 题题库随机抽 3 题（Fisher-Yates）
+      ch4Questions = [...CH4_QUESTION_POOL];
+      for (let i = ch4Questions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [ch4Questions[i], ch4Questions[j]] = [ch4Questions[j], ch4Questions[i]];
+      }
+      ch4Questions = ch4Questions.slice(0, CH4_TOTAL_Q);
       // 死代码（保留以免引用报错）
       judgmentPrompt = null;
       judgmentCooldown = 90;
