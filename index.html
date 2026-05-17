@@ -2783,8 +2783,8 @@
     // ============================================================
     function drawTitle() {
       drawBackgroundCh1();
-      text('策略人启示录', W / 2, 70, C.cyan, 26, 'center');
-      text('STRATEGIST APOCALYPSE', W / 2, 86, C.dim, 8, 'center');
+      text('策略人启示录', W / 2, 74, C.cyan, 33, 'center');
+      text('STRATEGIST APOCALYPSE', W / 2, 96, C.dim, 8, 'center');
       text('一个策略人的觉醒与自我进化', W / 2, 128, C.bossEye, 11, 'center');
 
       if (Math.floor(stateTimer / 30) % 2 === 0) {
@@ -2852,49 +2852,48 @@
           text('▼ 按 ENTER 继续 ▼', W / 2, 238, C.white, 10, 'center');
         }
       } else {
-        // ===== 第二页：血量 + 键盘操作 =====
-        text('▌ 开 始 之 前 · 你 要 知 道 的 两 件 事 ▐', W / 2, 18, C.cyan, 11, 'center');
-        rect(40, 24, W - 80, 1, C.cyan);
+        // ===== 第二页：操作指南（先按键，后血量）=====
+        text('操  作  指  南', W / 2, 24, C.cyan, 15, 'center');
+        rect(40, 32, W - 80, 1, C.cyan);
 
-        // ① 血量
-        text('①   你 的 血 量  =  你 的 头 发', W / 2, 42, C.yellow, 10, 'center');
+        // ① 三个按键区域
+        text('①   三 个 按 键 区 域', W / 2, 48, C.yellow, 10, 'center');
+
+        // —— 方向键（倒 T 排列）——
+        const arrCX = 80;
+        drawKeyCap(arrCX - 11, 60, 22, 16, '↑', 11);
+        drawKeyCap(arrCX - 33, 80, 22, 16, '←', 11);
+        drawKeyCap(arrCX - 11, 80, 22, 16, '↓', 11);
+        drawKeyCap(arrCX + 11, 80, 22, 16, '→', 11);
+        text('方 向 键', arrCX, 114, C.cyan, 9, 'center');
+        text('移 动 ·  ↑ 跳 跃', arrCX, 128, C.text, 8, 'center');
+
+        // —— 空格键 ——
+        const spX = 158, spW = 104;
+        drawKeyCap(spX, 80, spW, 16, '空 格 / SPACE', 9);
+        text('空 格 键', spX + spW / 2, 114, C.cyan, 9, 'center');
+        text('发 射 子 弹', spX + spW / 2, 128, C.text, 8, 'center');
+
+        // —— 1 / 2 / 3 ——
+        const numStartX = 305;
+        drawKeyCap(numStartX, 80, 22, 16, '1', 11);
+        drawKeyCap(numStartX + 26, 80, 22, 16, '2', 11);
+        drawKeyCap(numStartX + 52, 80, 22, 16, '3', 11);
+        text('1 / 2 / 3', numStartX + 37, 114, C.cyan, 9, 'center');
+        text('选 择 答 案 / 节 奏', numStartX + 37, 128, C.text, 8, 'center');
+
+        rect(40, 140, W - 80, 1, C.darker);
+
+        // ② 你的血量
+        text('②   你 的 血 量', W / 2, 156, C.yellow, 10, 'center');
         const cellW = 18, cellH = 11, gap = 3;
         const totalW = 6 * (cellW + gap) - gap;
         const barX = (W - totalW) / 2;
         for (let i = 0; i < 6; i++) {
-          rect(barX + i * (cellW + gap), 54, cellW, cellH, C.red);
-          rect(barX + i * (cellW + gap), 54, cellW, 2, C.cyanLt);
+          rect(barX + i * (cellW + gap), 168, cellW, cellH, C.red);
+          rect(barX + i * (cellW + gap), 168, cellW, 2, C.cyanLt);
         }
-        text('被砸中一次，少一格。掉光 = 秃头 = Game Over。', W / 2, 80, C.text, 9, 'center');
-        text('（战斗时显示在画面左上角）', W / 2, 92, C.dim, 8, 'center');
-
-        rect(40, 102, W - 80, 1, C.darker);
-
-        // ② 键盘操作
-        text('②   三 个 按 键 区 域', W / 2, 116, C.yellow, 10, 'center');
-
-        // —— 方向键（倒 T 排列）——
-        const arrCX = 80;
-        drawKeyCap(arrCX - 11, 130, 22, 16, '↑', 11);
-        drawKeyCap(arrCX - 33, 150, 22, 16, '←', 11);
-        drawKeyCap(arrCX - 11, 150, 22, 16, '↓', 11);
-        drawKeyCap(arrCX + 11, 150, 22, 16, '→', 11);
-        text('方 向 键', arrCX, 184, C.cyan, 9, 'center');
-        text('移 动 ·  ↑ 跳 跃', arrCX, 198, C.text, 8, 'center');
-
-        // —— 空格键 ——
-        const spX = 158, spW = 104;
-        drawKeyCap(spX, 150, spW, 16, '空 格 / SPACE', 9);
-        text('空 格 键', spX + spW / 2, 184, C.cyan, 9, 'center');
-        text('发 射 子 弹', spX + spW / 2, 198, C.text, 8, 'center');
-
-        // —— 1 / 2 / 3 ——
-        const numStartX = 305;
-        drawKeyCap(numStartX, 150, 22, 16, '1', 11);
-        drawKeyCap(numStartX + 26, 150, 22, 16, '2', 11);
-        drawKeyCap(numStartX + 52, 150, 22, 16, '3', 11);
-        text('1 / 2 / 3', numStartX + 37, 184, C.cyan, 9, 'center');
-        text('选 择 答 案 / 节 奏', numStartX + 37, 198, C.text, 8, 'center');
+        text('左上角是你的头发（血量槽），头发掉光，你就挂了。', W / 2, 198, C.text, 9, 'center');
 
         if (stateTimer > 15 && Math.floor(stateTimer / 28) % 2 === 0) {
           text('▼ ENTER 进 入 第 一 章 ▼', W / 2, 238, C.white, 11, 'center');
